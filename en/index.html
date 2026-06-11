@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The X Algorithm Handbook — Verifiable Rules from the Open-Source Code</title>
+<meta name="description" content="Rules and playbooks distilled from X (Twitter)'s open-source recommendation algorithm (2025-09 update). Every number cites a source file you can check yourself.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="#top">𝕏 Algorithm <span>Handbook</span></a>
+  <div class="spacer"></div>
+  <a class="lang" href="../zh/">中文</a>
+  <a class="gh" href="https://github.com/twitter/the-algorithm" target="_blank">Source Code ↗</a>
+</div>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="group">
+    <div class="group-title">Start</div>
+    <a href="#overview">What is this</a>
+    <a href="#pipeline">The big picture</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Rules</div>
+    <a href="#scoring">Scoring: the points table</a>
+    <a href="#rescoring">Boosts &amp; penalties</a>
+    <a href="#traffic">Where traffic comes from</a>
+    <a href="#reputation">Account trust (TweepCred)</a>
+    <a href="#limits">Limits &amp; safety labels</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Time</div>
+    <a href="#clocks">The seven clocks</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Playbooks</div>
+    <a href="#pb-new">New account (days 0–30)</a>
+    <a href="#pb-zero">Old account, 0 followers</a>
+    <a href="#pb-dormant">Waking up a dormant account</a>
+    <a href="#pb-pivot">Changing your niche</a>
+    <a href="#pb-daily">Every post: the checklist</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Reference</div>
+    <a href="#faq">FAQ</a>
+    <a href="#sources">Source file index</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<h1>The X Algorithm Handbook</h1>
+<p class="subtitle">Rules and playbooks distilled from X's official open-source recommendation algorithm (2025-09 update). Every number cites a source file. You can check it all yourself.</p>
+
+<div class="disclaimer">
+⚠️ <strong>About the data:</strong> This handbook is based on the official GitHub repos <code>twitter/the-algorithm</code> (latest commit <code>c54bec0</code>, 2025-09-03, "update for-you recommendations code") and <code>twitter/the-algorithm-ml</code>. In the 2025 code, the model weights are set remotely (the defaults in code are 0). The weight numbers quoted here come from the last table X made public (April 2023) — the official README still points to them. The open-source code may differ from what runs in production. Treat every number as a strong hint about scale, not an exact value.
+</div>
+
+<h2 id="overview">What is this</h2>
+<p>X (Twitter) put its recommendation algorithm — the code that decides which posts you see — on GitHub. It even got a quiet update in September 2025. That means for the first time, questions like "how do I grow?" and "why is my reach dead?" have answers you can actually check.</p>
+<p>This handbook pulls out every rule that matters for creators, organized as <strong>Rules → Time → Playbooks by situation</strong>, so you can look things up any time. It's written for people just starting out, small accounts, and people reviving old accounts.</p>
+
+<h2 id="pipeline">The big picture: a post's journey</h2>
+<div class="figure">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1d9bf0"/>
+    </marker>
+  </defs>
+  <rect x="10" y="30" width="160" height="100" rx="14" fill="#1d9bf0" opacity="0.12"/>
+  <text x="90" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#1d9bf0">① Gather</text>
+  <text x="90" y="78" text-anchor="middle" font-size="11" fill="#536471">~50% from follows</text>
+  <text x="90" y="94" text-anchor="middle" font-size="11" fill="#536471">~50% from strangers</text>
+  <text x="90" y="110" text-anchor="middle" font-size="11" fill="#536471">≈1500 candidates</text>
+  <rect x="210" y="30" width="160" height="100" rx="14" fill="#00ba7c" opacity="0.12"/>
+  <text x="290" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#00ba7c">② Score</text>
+  <text x="290" y="78" text-anchor="middle" font-size="11" fill="#536471">A neural net predicts</text>
+  <text x="290" y="94" text-anchor="middle" font-size="11" fill="#536471">15 kinds of reactions</text>
+  <text x="290" y="110" text-anchor="middle" font-size="11" fill="#536471">points × probability</text>
+  <rect x="410" y="30" width="160" height="100" rx="14" fill="#ffad1f" opacity="0.15"/>
+  <text x="490" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#b07c00">③ Adjust</text>
+  <text x="490" y="78" text-anchor="middle" font-size="11" fill="#536471">strangers ×0.75</text>
+  <text x="490" y="94" text-anchor="middle" font-size="11" fill="#536471">same-author discount</text>
+  <text x="490" y="110" text-anchor="middle" font-size="11" fill="#536471">fatigue ×0.2</text>
+  <rect x="610" y="30" width="140" height="100" rx="14" fill="#f4212e" opacity="0.10"/>
+  <text x="680" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#f4212e">④ Filter</text>
+  <text x="680" y="78" text-anchor="middle" font-size="11" fill="#536471">seen / duplicates</text>
+  <text x="680" y="94" text-anchor="middle" font-size="11" fill="#536471">NSFW / low quality</text>
+  <text x="680" y="110" text-anchor="middle" font-size="11" fill="#536471">→ your timeline</text>
+  <line x1="172" y1="80" x2="206" y2="80" stroke="#1d9bf0" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="372" y1="80" x2="406" y2="80" stroke="#1d9bf0" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="572" y1="80" x2="606" y2="80" stroke="#1d9bf0" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="20" y="180" font-size="12" font-weight="700" fill="#536471">Where candidates come from (inside ①):</text>
+  <rect x="20" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="85" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">Earlybird index</text>
+  <text x="85" y="227" text-anchor="middle" font-size="10" fill="#536471">follows · last 7 days</text>
+  <rect x="165" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="230" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">UTEG like-spread</text>
+  <text x="230" y="227" text-anchor="middle" font-size="10" fill="#536471">"X liked" · 48 hours</text>
+  <rect x="310" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="375" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">SimClusters</text>
+  <text x="375" y="227" text-anchor="middle" font-size="10" fill="#536471">145k interest groups</text>
+  <rect x="455" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="520" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">TwHIN embeddings</text>
+  <text x="520" y="227" text-anchor="middle" font-size="10" fill="#536471">similar content</text>
+  <rect x="600" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="665" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">Communities / FRS</text>
+  <text x="665" y="227" text-anchor="middle" font-size="10" fill="#536471">separate pipelines</text>
+</svg>
+<div class="caption">The four stages of the For You timeline. Each refresh scores about 1,500 candidate posts. Only a few dozen make it to your screen.</div>
+</div>
+
+<h2 id="scoring">Scoring: the points table</h2>
+<p>The whole algorithm boils down to one simple idea. Think of it like a video game:</p>
+<div class="card blue"><strong>Post score = sum of (chance someone does an action × points for that action)</strong></div>
+<p>The model guesses what each reader will do with your post. Each action is worth points (from the last table X made public):</p>
+
+<table>
+<thead><tr><th>What a reader does</th><th>Points</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Replies to you — and you answer back</td><td><span class="badge pos">+75</span></td><td>The biggest prize in the whole game</td></tr>
+<tr><td>Replies to your post</td><td><span class="badge pos">+13.5</span></td><td>Worth 27 likes</td></tr>
+<tr><td>Visits your profile, then likes or replies</td><td><span class="badge pos">+12</span></td><td>Your pinned post matters</td></tr>
+<tr><td>Opens your post and stays 2+ minutes</td><td><span class="badge pos">+10–11</span></td><td>Deep reading counts</td></tr>
+<tr><td>Reposts it</td><td><span class="badge pos">+1</span></td><td></td></tr>
+<tr><td>Likes it</td><td><span class="badge pos">+0.5</span></td><td>The weakest positive signal</td></tr>
+<tr><td>Taps "not interested" / mutes / blocks</td><td><span class="badge neg">−74</span></td><td>≈ erases 148 likes</td></tr>
+<tr><td>Reports your post</td><td><span class="badge neg">−369</span></td><td>≈ erases 738 likes</td></tr>
+</tbody>
+</table>
+<p class="src">Source: <code>the-algorithm-ml/projects/home/recap/README.md</code>; weights are read in <code>home-mixer/.../param/HomeGlobalParams.scala</code> (2025 version sets them remotely; defaults are 0, but the scale still holds)</p>
+
+<h3>New in the 2025 update</h3>
+<p>The September 2025 code added new things the model now predicts. That tells you what X is rewarding now:</p>
+<ul>
+<li><strong>Bookmarks, shares, screenshots</strong> — "worth saving" earns its own points</li>
+<li><strong>Dwell time</strong> — making people stop and read = points</li>
+<li><strong>Video watch time (down to the millisecond), quality views, immersive views</strong> — video got a much bigger scoreboard</li>
+<li><strong>Phoenix scorer</strong> — a new model that reads each user's recent behavior</li>
+<li><strong>Grok content tags</strong> — AI labels content quality (see <a href="#limits">Limits</a>)</li>
+</ul>
+<p class="src">Source: <code>home-mixer/.../model/PredictedScoreFeature.scala</code> (15 prediction heads), <code>PhoenixPredictedScoreFeature.scala</code></p>
+
+<div class="card green">
+<div class="card-title">✅ The one-line takeaway</div>
+The game is not "get likes." The game is <strong>"start conversations with the right people."</strong> One conversation with the author = 150 likes. One "not interested" tap = losing 148 likes. Better to reach 100 right people than to bother 10,000 wrong ones.
+</div>
+
+<h2 id="rescoring">Boosts &amp; penalties (the multipliers)</h2>
+<p>After the model scores your post, a chain of <strong>multipliers</strong> gets applied:</p>
+
+<table>
+<thead><tr><th>Multiplier</th><th>Value</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Out-of-network discount</td><td><span class="badge warn">×0.75</span></td><td>Non-followers see your post at 75% strength</td></tr>
+<tr><td>Reply discount</td><td><span class="badge warn">×0.75</span></td><td>Replies shared as content get 75% strength</td></tr>
+<tr><td>Same-author discount</td><td><span class="badge warn">×1 → ×0.625 → ×0.4375…</span></td><td>Your 2nd, 3rd post in one refresh decays by <code>0.75×0.5^n+0.25</code>, floor ×0.25. <strong>Spamming doesn't work</strong></td></tr>
+<tr><td>Feedback fatigue</td><td><span class="badge neg">×0.2 to start</span></td><td>After someone taps "not interested" on you, your posts show to them at 20% strength. Recovers 0.2 every 35 days — <strong>full recovery takes 140 days</strong></td></tr>
+<tr><td>Grok "slop" decay</td><td><span class="badge neg">×(0–1)</span></td><td>Content Grok flags as low-effort filler gets multiplied down</td></tr>
+<tr><td>Live content boost</td><td><span class="badge info">dynamic</span></td><td>Only for followed authors with 1M+ followers. Not your problem yet</td></tr>
+</tbody>
+</table>
+<p class="src">Source: <code>home-mixer/.../scorer/RescoringFactorProvider.scala</code>, <code>DiversityDiscountProvider.scala</code>, <code>FeedbackFatigueScorer.scala</code> (140 days / floor 0.2), <code>GrokSlopScoreRescorer.scala</code>, <code>ScoredTweetsParam.scala</code> (the 0.75 defaults)</p>
+
+<h3>Filters (instant removal, no discount)</h3>
+<ul>
+<li>Posts already seen / already served, including their reply chains</li>
+<li>Same-author dedup (usually one post per author per refresh)</li>
+<li>Media-cluster dedup — <strong>reposting the same images/videos gets detected and removed</strong></li>
+<li>Grok NSFW / gore filters</li>
+<li>Everything from authors the user muted or blocked</li>
+</ul>
+<p class="src">Source: <code>home-mixer/.../functional_component/filter/</code> (18 filters)</p>
+
+<h2 id="traffic">Where traffic comes from</h2>
+<p>About <strong>50% of the For You feed comes from accounts people follow</strong> (the Earlybird index holds the last 7 days of posts). The other <strong>50% comes from recommendations to strangers</strong>. Four doors lead to strangers:</p>
+
+<table>
+<thead><tr><th>Door</th><th>How it works</th><th>What it means for small accounts</th></tr></thead>
+<tbody>
+<tr><td><strong>UTEG like-spread</strong></td><td>Someone likes your post → their followers may see "X liked this." The interaction graph only keeps <strong>24–48 hours</strong></td><td>One like from a real account with real followers beats 50 bot likes (bots have no followers — the chain breaks)</td></tr>
+<tr><td><strong>SimClusters</strong></td><td>~145k interest "neighborhoods." Your neighborhood is decided by <strong>who follows and likes you</strong>. Each liker's interests get added to your post's profile in real time</td><td>Stay in one lane and your neighborhood label gets sharp. Random followers and like-swaps blur your label</td></tr>
+<tr><td><strong>Search</strong></td><td>Every public post enters the search index</td><td>Doesn't care about followers. Use words people actually search for — traffic is possible on day one</td></tr>
+<tr><td><strong>Communities</strong></td><td>A separate pipeline sends posts straight to community members</td><td>Reach a whole community with 0 followers. The most underrated door for new accounts</td></tr>
+</tbody>
+</table>
+<p class="src">Source: <code>README.md</code> (the 50% split), <code>src/scala/.../user_tweet_entity_graph/README.md</code> (24–48h), <code>simclusters_v2/README.md</code>, <code>ScoredTweetsRecommendationPipelineConfig.scala</code> (9 candidate pipelines)</p>
+
+<div class="card blue">
+<div class="card-title">💡 The fifth door — and it ignores followers too: replies</div>
+Your reply under any big post is visible to everyone reading that conversation. It's the only surface that completely ignores your follower count. Combine that with the +75 prize for author-engaged replies, and <strong>the reply section is a small account's main quest, not a side quest</strong>. Warning: spammy replies get folded into the hidden "low quality" section (see Limits). Quality wins, not volume.
+</div>
+
+<h2 id="reputation">Account trust (TweepCred)</h2>
+<p>Every account has a 0–100 trust score, computed with PageRank — the same idea Google used to rank web pages. Followers pass trust to you. The more trusted your followers are, the more they pass. The key rules:</p>
+
+<table>
+<thead><tr><th>Rule</th><th>Value</th><th>In the code</th></tr></thead>
+<tbody>
+<tr><td>Suspended account</td><td>base score = 0</td><td><code>if (isSuspended) 0</code></td></tr>
+<tr><td>Verified account</td><td>base score = <strong>100 (max)</strong></td><td><code>if (isVerified) 100</code></td></tr>
+<tr><td>Regular account ceiling</td><td>base score tops out at 55</td><td>device weight 0.55 × age weight × 100</td></tr>
+<tr><td>Account-age weight</td><td><strong>maxes out at 30 days</strong></td><td><code>if (age &gt; 30) 1.0</code></td></tr>
+<tr><td>Restricted account</td><td>base score ×0.1</td><td><code>score *= 0.1</code></td></tr>
+<tr><td>Follow-ratio penalty (base)</td><td>following &gt; <strong>500</strong> AND following/followers &gt; 0.6 → exponential decay</td><td><code>UserMass.scala</code></td></tr>
+<tr><td>Follow-ratio penalty (PageRank)</td><td>following &gt; <strong>2500</strong> → divided by up to <strong>50</strong></td><td><code>Reputation.scala</code></td></tr>
+<tr><td>Low-trust filter</td><td>TweepCred &lt; 40 gets filtered from follow recommendations</td><td><code>LowTweepCredFollowStore.scala</code></td></tr>
+</tbody>
+</table>
+<p class="src">Source: <code>src/scala/com/twitter/graph/batch/job/tweepcred/UserMass.scala</code>, <code>Reputation.scala</code></p>
+
+<div class="card green">
+<div class="card-title">✅ Myth busted: following people does not hurt you</div>
+The penalty needs <strong>two conditions at once</strong>: following more than 500 (base score) / 2,500 (PageRank) <strong>and</strong> a bad ratio. A new account with 0 followers following 300 accounts in its topic = zero penalty. The only thing to avoid is the follow-thousands-for-follow-backs game. Safe line: <strong>follow freely up to 500; past that, keep following ≤ 0.6 × followers</strong>.
+</div>
+
+<h2 id="limits">Limits &amp; safety labels</h2>
+<p>"Shadowban" isn't magic — in the code it's specific labels with specific actions. Three levels:</p>
+<ul>
+<li><strong>Drop (fully hidden)</strong>: the content or account stops appearing</li>
+<li><strong>Downrank</strong>: sorted to the bottom</li>
+<li><strong>Conversation folding</strong>: replies get hidden behind "show more" in a low-quality section</li>
+</ul>
+
+<table>
+<thead><tr><th>Label</th><th>What triggers it</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>NotGraduated</code></td><td>New account that hasn't "graduated"</td><td>May not be shown to non-followers at all; replies folded</td></tr>
+<tr><td><code>EngagementSpammer</code></td><td>Like-swap groups, fake engagement</td><td>Drop</td></tr>
+<tr><td><code>DuplicateContent</code></td><td>Reposted / copied content</td><td>Drop</td></tr>
+<tr><td><code>CopypastaSpam</code></td><td>Copy-pasting viral posts</td><td>Downrank / folded</td></tr>
+<tr><td><code>UntrustedUrl</code></td><td>Sketchy links in replies</td><td>Folded into the abusive-quality section</td></tr>
+<tr><td><code>HighToxicityScore</code></td><td>High score from the toxicity model (pToxicity)</td><td>Downranked by per-language thresholds</td></tr>
+<tr><td><code>NsfwHighPrecision</code> etc.</td><td>NSFW model hits</td><td>Drop / downrank</td></tr>
+</tbody>
+</table>
+<p class="src">Source: <code>visibilitylib/.../UserLabelRules.scala</code>, <code>DownrankingRules.scala</code>, <code>trust_and_safety_models/README.md</code></p>
+
+<p>Negative feedback (block / mute / report / "not interested") is counted in <strong>1-day / 7-day / 30-day</strong> windows — old mistakes fall out of the stats after 30 days (but feedback fatigue runs its own 140-day timer).</p>
+<p class="src">Source: <code>representation-scorer/.../UserSignalServiceRecentEngagementsClient.scala</code></p>
+
+<h2 id="clocks">The seven clocks</h2>
+<p>The whole system runs on timers, like ovens in a kitchen. <strong>Hour-level clocks decide a post's fate. Day-level clocks decide relationships. Week-level clocks decide your label. Hundred-day clocks decide compound interest.</strong></p>
+
+<div class="figure">
+<svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif">
+  <line x1="40" y1="120" x2="730" y2="120" stroke="#e1e8ed" stroke-width="3"/>
+  <g>
+    <circle cx="70" cy="120" r="7" fill="#f4212e"/>
+    <text x="70" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#f4212e">30 min</text>
+    <text x="70" y="150" text-anchor="middle" font-size="10.5" fill="#536471">post "buzz" score</text>
+    <text x="70" y="164" text-anchor="middle" font-size="10.5" fill="#536471">half-life</text>
+  </g>
+  <g>
+    <circle cx="180" cy="120" r="7" fill="#ffad1f"/>
+    <text x="180" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#b07c00">48 hours</text>
+    <text x="180" y="150" text-anchor="middle" font-size="10.5" fill="#536471">like-spread window</text>
+    <text x="180" y="164" text-anchor="middle" font-size="10.5" fill="#536471">(UTEG)</text>
+  </g>
+  <g>
+    <circle cx="300" cy="120" r="7" fill="#00ba7c"/>
+    <text x="300" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#00ba7c">7 days</text>
+    <text x="300" y="150" text-anchor="middle" font-size="10.5" fill="#536471">friendship-strength</text>
+    <text x="300" y="164" text-anchor="middle" font-size="10.5" fill="#536471">half-life, daily update</text>
+  </g>
+  <g>
+    <circle cx="420" cy="120" r="7" fill="#1d9bf0"/>
+    <text x="420" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#1d9bf0">every 7 days</text>
+    <text x="420" y="150" text-anchor="middle" font-size="10.5" fill="#536471">neighborhood batch job</text>
+    <text x="420" y="164" text-anchor="middle" font-size="10.5" fill="#536471">(the "label maker")</text>
+  </g>
+  <g>
+    <circle cx="530" cy="120" r="7" fill="#1d9bf0"/>
+    <text x="530" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#1d9bf0">30 days</text>
+    <text x="530" y="150" text-anchor="middle" font-size="10.5" fill="#536471">age weight caps;</text>
+    <text x="530" y="164" text-anchor="middle" font-size="10.5" fill="#536471">negative-signal window</text>
+  </g>
+  <g>
+    <circle cx="630" cy="120" r="7" fill="#794bc4"/>
+    <text x="630" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#794bc4">100 days</text>
+    <text x="630" y="150" text-anchor="middle" font-size="10.5" fill="#536471">each like keeps paying</text>
+    <text x="630" y="164" text-anchor="middle" font-size="10.5" fill="#536471">your neighborhood</text>
+  </g>
+  <g>
+    <circle cx="715" cy="120" r="7" fill="#f4212e"/>
+    <text x="715" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#f4212e">140 days</text>
+    <text x="715" y="150" text-anchor="middle" font-size="10.5" fill="#536471">"not interested"</text>
+    <text x="715" y="164" text-anchor="middle" font-size="10.5" fill="#536471">full recovery</text>
+  </g>
+  <text x="40" y="40" font-size="13" font-weight="700" fill="#536471">⏱ Fast to slow: seven clocks running at once</text>
+</svg>
+<div class="caption">Each clock maps to a decision: guard the first hour of a post, show up daily, stay on topic weekly, build reputation quarterly.</div>
+</div>
+
+<table>
+<thead><tr><th>Clock</th><th>Value</th><th>What it means for you</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>Real-time engagement features</td><td>half-life <strong>30 minutes</strong></td><td>The first hour decides a post's fate. Stay and answer every comment</td><td><code>TimelinesOnlineAggregationConfigBase.scala</code></td></tr>
+<tr><td>UTEG interaction graph</td><td><strong>24–48 hours</strong></td><td>Nothing after 48 hours? Move on. Post the next one</td><td>UTEG README</td></tr>
+<tr><td>RealGraph edge weight</td><td>daily decay ×0.955, half-life ≈ <strong>7 days</strong>; updates daily</td><td>Go quiet for a week and every relationship loses half its strength. A little every day beats a Sunday binge</td><td><code>InteractionGraphAggregationConfig.scala</code></td></tr>
+<tr><td>Earlybird index</td><td><strong>7 days</strong></td><td>How long a post stays in the recommendation pool</td><td>search README</td></tr>
+<tr><td>SimClusters batch job</td><td>runs <strong>every 7 days</strong></td><td>What you do this week becomes your label next week. Off-topic likes pollute your label for a full cycle</td><td><code>InterestedInFromKnownFor.scala</code> <code>batchIncrement=Days(7)</code></td></tr>
+<tr><td>Like-edge half-life</td><td><strong>100 days</strong></td><td>Every real like keeps funding your neighborhood label for 3+ months — compound interest</td><td><code>ProducerNormsAndCounts.scala</code></td></tr>
+<tr><td>Feedback fatigue</td><td>recovers one step every 35 days, full at <strong>140 days</strong></td><td>Annoying one reader costs you four months</td><td><code>FeedbackFatigueScorer.scala</code></td></tr>
+</tbody>
+</table>
+
+<h2 id="pb-new">Playbook ① New account (days 0–30)</h2>
+<p><strong>Your situation:</strong> you wear the <code>NotGraduated</code> "new kid" badge, your age weight isn't full, and the algorithm doesn't know who you are. <strong>The goal of the first 30 days is not followers. It's teaching the algorithm who you are, and earning a handful of real relationships.</strong></p>
+<ul>
+<li><strong>Day 0:</strong> photo, bio, pinned post all done (profile-visit conversions are worth +12); valid device linked; Premium optional (base trust 55 → 100); follow 100–300 accounts in your topic (<strong>under 500 is safe</strong>) — this is your first "who I am" form for the algorithm</li>
+<li><strong>Week 1:</strong> replies only. Three to five thoughtful replies a day. Goal: a few real accounts in your topic notice you. Post your own stuff freely as practice — ignore the numbers</li>
+<li><strong>Week 2:</strong> the first label-maker cycle lands; the algorithm starts to know you. <strong>Stay on topic, no random likes.</strong> Start posting in 2–3 active Communities</li>
+<li><strong>Weeks 3–4:</strong> post more, use searchable words. The test: replies get steady engagement → your content works, do more. Nobody responds → fix the content. It's not a shadowban</li>
+<li><strong>Day 30:</strong> age weight full, new-kid badge mostly behind you. Now push originals for real</li>
+</ul>
+
+<h2 id="pb-zero">Playbook ② Old account, 0 followers</h2>
+<p><strong>Your situation:</strong> better than a new account — age weight full ✓, no new-kid badge ✓, clean record ✓. But like a new account: no relationships, no neighborhood. <strong>Run the new-account playbook, skip the 30-day waiting period. Every clock starts today.</strong></p>
+<ul>
+<li>Do the Day 0 checklist, then start from "Week 1." Same rhythm</li>
+<li>Your edge: you can push hard from day one — no badge to outgrow</li>
+<li>Door priority: replies &gt; Communities &gt; search keywords &gt; earning that first like from someone with real followers (UTEG)</li>
+</ul>
+
+<h2 id="pb-dormant">Playbook ③ Waking up a dormant account (followers, but years of silence)</h2>
+<p><strong>Your situation:</strong> your structural assets survived (trust score, follower graph, age). Your behavioral assets are dead: the friendship strength between you and every follower has decayed to zero. <strong>To the algorithm, your followers are now strangers who happen to follow you.</strong> Your neighborhood label is blurry.</p>
+<ul>
+<li><strong>Audit first:</strong> followers still active and on-topic → focus on reconnecting; mostly dead or you're switching topics → run the 0-follower playbook</li>
+<li><strong>First two weeks = relight the edges:</strong> go reply to and like your still-active followers' posts. Earn even one like back. The decay math favors you: <strong>recent interactions far outweigh old silence</strong> — a few new touches beat years of quiet</li>
+<li><strong>Be an active reader for a week first:</strong> rebuilds your interest signals and reconnects edges at the same time</li>
+<li><strong>Prune old follows:</strong> if you followed thousands back in the day, trim to the safe line (unfollowing doesn't hurt your own trust)</li>
+<li><strong>Refresh your profile</strong> before posting again: when old followers see you resurface, their first glance decides between a like-back and an unfollow</li>
+<li><strong>Expect:</strong> 3–6 weeks to rebuild normal distribution. If weeks pass with followers visibly seeing nothing and zero engagement, suspect an old safety label — appeal or start fresh</li>
+</ul>
+
+<h2 id="pb-pivot">Playbook ④ Changing your niche</h2>
+<p><strong>Your situation:</strong> your neighborhood label points at your old topic. Posting new-topic content right away → it goes to old followers first → "not interested" (−74) → terrible start.</p>
+<ul>
+<li><strong>The order must be: interact first, post later.</strong> Spend 2–3 weeks engaging hard in the new community (follow, like, reply)</li>
+<li>Wait until people from the new community start liking you — their interest vectors reshape your post profiles and your label in real time</li>
+<li>Then ramp up new-topic originals. You can taper old-topic content; no need to zero it out</li>
+<li>Remember the weekly clock: every repositioning takes at least 2 batch cycles (~14 days) to settle</li>
+</ul>
+
+<h2 id="pb-daily">Playbook ⑤ Every post: the checklist</h2>
+<div class="card blue">
+<ol>
+<li><strong>Timing:</strong> post when your target readers are online</li>
+<li><strong>Guard the first hour</strong> (30-minute half-life): answer every single comment — each answer is a +75 chance</li>
+<li><strong>48-hour review:</strong> if it's spreading, keep tending it; if it's silent, move on — the post keeps working through search (7-day pool + permanent search index)</li>
+<li><strong>Never:</strong> post in rapid bursts (2nd post drops to ×0.625), bait clicks (−74 to start), buy fake engagement (broken chains = wasted money), repost duplicate media (cluster dedup filters it out)</li>
+</ol>
+</div>
+
+<h2 id="faq">FAQ</h2>
+
+<h3>Q: What does one new follower actually give me? The chance they like my stuff again is low, right?</h3>
+<p><strong>Passive benefits (work even if they never act):</strong> ① they pass trust to you continuously (PageRank); ② they cast a vote for which neighborhood you belong to; ③ you become a "friend of a friend" to all of their followers (a social-proof feature in ranking).</p>
+<p><strong>Active benefits (with an expiry date):</strong> at the moment of the follow, your friendship strength is at its peak — the first few days are when they're most likely to see you. <strong>Think of a follower as a 7-day trial subscription that silently cancels unless they interact.</strong> No interaction in the window → the edge decays to zero in weeks → they become a ghost follower.</p>
+<p><strong>The move:</strong> when someone follows you, go reply to one of their posts with something real. It's much faster than waiting for them to like you — and if they answer, that's a +75-class signal that welds the edge shut.</p>
+
+<h3>Q: Why do some million-follower accounts get no reach?</h3>
+<p>Followers aren't a bank balance — they're batteries that need recharging. Friendship strength halves every 7 days; years of silence zero it all out, leaving only passive benefits. <strong>The metric to watch is "how many familiar faces engage per post," not the follower count.</strong></p>
+
+<h3>Q: Does buying followers or likes work?</h3>
+<p>At the code level it's useless and harmful: bots have no followers, so the like-spread chain breaks (you bought nothing); bot interest vectors are noise that blurs your neighborhood label; engineered engagement triggers the <code>EngagementSpammer</code> label = Drop.</p>
+
+<h3>Q: Am I shadowbanned?</h3>
+<p>Rule out the simple thing first: do your replies get any engagement? Yes → you're not banned, your content's distribution is just low. Total silence for weeks (followers can see you, zero engagement) → suspect a safety label; check the <a href="#limits">Limits section</a> triggers and review your recent behavior (sketchy links, bulk actions, reports).</p>
+
+<h3>Q: Is Premium (verification) worth it?</h3>
+<p>For the base trust score, the code literally says <code>if (isVerified) mass = 100</code>, while unverified caps at 55. That's the part you can verify in the code; other perks (editing, long posts) are a separate question.</p>
+
+<h3>Q: How many posts per day?</h3>
+<p>The same-author discount (2nd post ×0.625) plus cluster dedup means: <strong>1–3 good posts beat 10 filler posts</strong>. Spend the saved time in the reply sections (the +75 gold mine).</p>
+
+<h2 id="sources">Source file index</h2>
+<table>
+<thead><tr><th>Topic</th><th>File (path inside the repo)</th></tr></thead>
+<tbody>
+<tr><td>Scoring formula &amp; last public weights</td><td><code>the-algorithm-ml/projects/home/recap/README.md</code></td></tr>
+<tr><td>2025 dynamic weight params</td><td><code>home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala</code></td></tr>
+<tr><td>15 prediction heads</td><td><code>home-mixer/.../model/PredictedScoreFeature.scala</code></td></tr>
+<tr><td>Boosts / penalties</td><td><code>home-mixer/.../scorer/RescoringFactorProvider.scala</code>, <code>DiversityDiscountProvider.scala</code></td></tr>
+<tr><td>Feedback fatigue (140 days)</td><td><code>home-mixer/.../scorer/FeedbackFatigueScorer.scala</code></td></tr>
+<tr><td>Grok slop decay</td><td><code>home-mixer/.../scorer/GrokSlopScoreRescorer.scala</code></td></tr>
+<tr><td>Trust: base score</td><td><code>src/scala/com/twitter/graph/batch/job/tweepcred/UserMass.scala</code></td></tr>
+<tr><td>Trust: PageRank adjustment</td><td><code>src/scala/com/twitter/graph/batch/job/tweepcred/Reputation.scala</code></td></tr>
+<tr><td>Safety labels</td><td><code>visibilitylib/.../UserLabelRules.scala</code>, <code>DownrankingRules.scala</code></td></tr>
+<tr><td>Edge decay (7 days)</td><td><code>src/scala/com/twitter/interaction_graph/scio/agg_all/InteractionGraphAggregationConfig.scala</code></td></tr>
+<tr><td>Weekly neighborhood batch job</td><td><code>src/scala/com/twitter/simclusters_v2/scalding/InterestedInFromKnownFor.scala</code></td></tr>
+<tr><td>100-day like half-life</td><td><code>src/scala/com/twitter/simclusters_v2/scalding/ProducerNormsAndCounts.scala</code></td></tr>
+<tr><td>Real-time aggregation (30 min)</td><td><code>src/scala/com/twitter/timelines/prediction/common/aggregates/real_time/TimelinesOnlineAggregationConfigBase.scala</code></td></tr>
+<tr><td>Retrieval signals master list</td><td><code>RETREIVAL_SIGNALS.md</code> (repo root)</td></tr>
+</tbody>
+</table>
+
+<footer>
+Based on <a href="https://github.com/twitter/the-algorithm" target="_blank">twitter/the-algorithm</a> (commit c54bec0, 2025-09-03) and <a href="https://github.com/twitter/the-algorithm-ml" target="_blank">twitter/the-algorithm-ml</a>. Analysis tool: Claude Fable 5. For reference only — production parameters can change at any time.<br>
+<a href="../zh/">中文版</a>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

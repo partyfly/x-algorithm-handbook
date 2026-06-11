@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X 算法规则手册 — 基于开源源码的可查证指南</title>
+<meta name="description" content="基于 X(Twitter)2025-09 更新版开源推荐算法源码整理的规则与行动指南。每个数字都标注源码文件,可自行验证。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="#top">𝕏 算法<span>规则手册</span></a>
+  <div class="spacer"></div>
+  <a class="lang" href="../en/">English</a>
+  <a class="gh" href="https://github.com/twitter/the-algorithm" target="_blank">算法源码 ↗</a>
+</div>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="group">
+    <div class="group-title">开始</div>
+    <a href="#overview">这是什么</a>
+    <a href="#pipeline">算法全景图</a>
+  </div>
+  <div class="group">
+    <div class="group-title">规则</div>
+    <a href="#scoring">评分规则:权重表</a>
+    <a href="#rescoring">加成与惩罚系数</a>
+    <a href="#traffic">流量入口:召回</a>
+    <a href="#reputation">账号信誉(TweepCred)</a>
+    <a href="#limits">限流与安全标签</a>
+  </div>
+  <div class="group">
+    <div class="group-title">时间</div>
+    <a href="#clocks">算法的七个时钟</a>
+  </div>
+  <div class="group">
+    <div class="group-title">行动指南</div>
+    <a href="#pb-new">新号(0–30 天)</a>
+    <a href="#pb-zero">0 粉老号</a>
+    <a href="#pb-dormant">沉睡老号复活</a>
+    <a href="#pb-pivot">换赛道</a>
+    <a href="#pb-daily">每条帖子的标准动作</a>
+  </div>
+  <div class="group">
+    <div class="group-title">参考</div>
+    <a href="#faq">常见问题 FAQ</a>
+    <a href="#sources">源码文件索引</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<h1>X 算法规则手册</h1>
+<p class="subtitle">基于 X 官方开源推荐算法源码(2025-09 更新版)整理的规则与行动指南。每个数字都标注了源码出处,可自行验证。</p>
+
+<div class="disclaimer">
+⚠️ <strong>数据口径说明:</strong>本手册基于 GitHub 上 <code>twitter/the-algorithm</code>(最新提交 <code>c54bec0</code>,2025-09-03 "update for-you recommendations code")与 <code>twitter/the-algorithm-ml</code> 两个官方仓库。2025 版代码中,模型权重改为线上动态下发(代码默认值为 0),本手册引用的权重数值来自 X 最后一次公开的权重表(2023-04),量级关系仍被官方 README 引用。开源代码与生产环境可能存在差异,请把所有数字当作"量级参考"而非精确值。
+</div>
+
+<h2 id="overview">这是什么</h2>
+<p>X(Twitter)把推荐算法的源代码公开在 GitHub 上,并在 2025 年 9 月更新过一次。这意味着:<strong>"怎么涨粉、为什么限流"第一次有了可以查证的官方答案。</strong></p>
+<p>本手册把几十万行 Scala/Python 源码中与创作者相关的规则全部提炼出来,按「规则 → 时间 → 人群行动指南」组织,方便随时查询。适用人群:刚起号的新人、粉丝很少的小号、想复活老号的人。</p>
+
+<h2 id="pipeline">算法全景图:一条帖子的旅程</h2>
+<div class="figure">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1d9bf0"/>
+    </marker>
+  </defs>
+  <!-- stage 1 -->
+  <rect x="10" y="30" width="160" height="100" rx="14" fill="#1d9bf0" opacity="0.12"/>
+  <text x="90" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#1d9bf0">① 召回</text>
+  <text x="90" y="78" text-anchor="middle" font-size="11" fill="#536471">关注内 ~50%</text>
+  <text x="90" y="94" text-anchor="middle" font-size="11" fill="#536471">关注外 ~50%</text>
+  <text x="90" y="110" text-anchor="middle" font-size="11" fill="#536471">≈1500 条候选</text>
+  <!-- stage 2 -->
+  <rect x="210" y="30" width="160" height="100" rx="14" fill="#00ba7c" opacity="0.12"/>
+  <text x="290" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#00ba7c">② 重排序</text>
+  <text x="290" y="78" text-anchor="middle" font-size="11" fill="#536471">神经网络预测</text>
+  <text x="290" y="94" text-anchor="middle" font-size="11" fill="#536471">15 种互动概率</text>
+  <text x="290" y="110" text-anchor="middle" font-size="11" fill="#536471">加权求和打分</text>
+  <!-- stage 3 -->
+  <rect x="410" y="30" width="160" height="100" rx="14" fill="#ffad1f" opacity="0.15"/>
+  <text x="490" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#b07c00">③ 加成/惩罚</text>
+  <text x="490" y="78" text-anchor="middle" font-size="11" fill="#536471">关注外 ×0.75</text>
+  <text x="490" y="94" text-anchor="middle" font-size="11" fill="#536471">同作者衰减</text>
+  <text x="490" y="110" text-anchor="middle" font-size="11" fill="#536471">反馈疲劳 ×0.2</text>
+  <!-- stage 4 -->
+  <rect x="610" y="30" width="140" height="100" rx="14" fill="#f4212e" opacity="0.10"/>
+  <text x="680" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#f4212e">④ 过滤</text>
+  <text x="680" y="78" text-anchor="middle" font-size="11" fill="#536471">已看过 / 重复</text>
+  <text x="680" y="94" text-anchor="middle" font-size="11" fill="#536471">NSFW / 低质</text>
+  <text x="680" y="110" text-anchor="middle" font-size="11" fill="#536471">→ 你的时间线</text>
+  <!-- arrows -->
+  <line x1="172" y1="80" x2="206" y2="80" stroke="#1d9bf0" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="372" y1="80" x2="406" y2="80" stroke="#1d9bf0" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="572" y1="80" x2="606" y2="80" stroke="#1d9bf0" stroke-width="2.5" marker-end="url(#arr)"/>
+  <!-- bottom: candidate sources -->
+  <text x="20" y="180" font-size="12" font-weight="700" fill="#536471">召回来源(① 的内部):</text>
+  <rect x="20" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="85" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">Earlybird 搜索索引</text>
+  <text x="85" y="227" text-anchor="middle" font-size="10" fill="#536471">关注的人·近 7 天</text>
+  <rect x="165" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="230" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">UTEG 点赞传播</text>
+  <text x="230" y="227" text-anchor="middle" font-size="10" fill="#536471">"XX 赞了"·48 小时</text>
+  <rect x="310" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="375" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">SimClusters 社区</text>
+  <text x="375" y="227" text-anchor="middle" font-size="10" fill="#536471">14.5 万兴趣社区</text>
+  <rect x="455" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="520" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">TwHIN 嵌入</text>
+  <text x="520" y="227" text-anchor="middle" font-size="10" fill="#536471">相似内容检索</text>
+  <rect x="600" y="195" width="130" height="40" rx="10" fill="#f7f9fa" stroke="#e1e8ed"/>
+  <text x="665" y="212" text-anchor="middle" font-size="11" font-weight="600" fill="#0f1419">社群 / FRS / 列表</text>
+  <text x="665" y="227" text-anchor="middle" font-size="10" fill="#536471">独立分发管线</text>
+</svg>
+<div class="caption">For You 时间线的四个阶段。每次刷新,约 1500 条候选被打分,最终只展示几十条。</div>
+</div>
+
+<h2 id="scoring">评分规则:权重表</h2>
+<p>核心只有一个公式:</p>
+<div class="card blue"><strong>帖子得分 = Σ(每种互动发生的预测概率 × 该互动的权重)</strong></div>
+<p>模型预测"看到这条帖子的人会做什么",每种行为的分值如下(最后一次公开的官方权重):</p>
+
+<table>
+<thead><tr><th>读者的行为</th><th>权重</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>回复你,且你回应了他的回复</td><td><span class="badge pos">+75</span></td><td>全系统最高正向信号</td></tr>
+<tr><td>回复你的帖子</td><td><span class="badge pos">+13.5</span></td><td>是点赞的 27 倍</td></tr>
+<tr><td>点进你的主页并赞/回复了内容</td><td><span class="badge pos">+12</span></td><td>主页转化很值钱,置顶帖很重要</td></tr>
+<tr><td>点进帖子并停留 ≥2 分钟</td><td><span class="badge pos">+10~11</span></td><td>深度阅读信号</td></tr>
+<tr><td>转推</td><td><span class="badge pos">+1</span></td><td></td></tr>
+<tr><td>点赞</td><td><span class="badge pos">+0.5</span></td><td>最弱的正向信号</td></tr>
+<tr><td>点"不感兴趣"/静音/拉黑</td><td><span class="badge neg">−74</span></td><td>≈ 抹掉 148 个赞</td></tr>
+<tr><td>举报</td><td><span class="badge neg">−369</span></td><td>≈ 抹掉 738 个赞</td></tr>
+</tbody>
+</table>
+<p class="src">出处:<code>the-algorithm-ml/projects/home/recap/README.md</code>;权重读取:<code>home-mixer/.../param/HomeGlobalParams.scala</code>(2025 版改为动态下发,默认 0,量级关系不变)</p>
+
+<h3>2025 版新增的预测目标</h3>
+<p>2025-09 更新的代码新增了一批预测头,说明这些行为正在被算法计入:</p>
+<ul>
+<li><strong>书签(Bookmark)、分享(Share)、截图(Screenshot)</strong> —— "值得收藏"的内容有了独立加分项</li>
+<li><strong>停留时长(Dwell)</strong> —— 让人停下来慢慢看 = 加分</li>
+<li><strong>视频观看时长(精确到毫秒)、视频质量观看、沉浸式观看</strong> —— 视频权重体系大幅扩展</li>
+<li><strong>Phoenix 评分器</strong> —— 基于用户行为序列的新模型,与主模型并行</li>
+<li><strong>Grok 内容标注</strong> —— AI 给内容打质量标签(见<a href="#limits">限流</a>一节)</li>
+</ul>
+<p class="src">出处:<code>home-mixer/.../model/PredictedScoreFeature.scala</code>(15 个预测头)、<code>PhoenixPredictedScoreFeature.scala</code></p>
+
+<div class="card green">
+<div class="card-title">✅ 一句话结论</div>
+游戏的目标不是"获得点赞",而是<strong>"和对的人发生对话"</strong>。一次作者参与的对话 = 150 个赞;一次"不感兴趣" = 损失 148 个赞。宁可触达 100 个对的人,不要打扰 10000 个错的人。
+</div>
+
+<h2 id="rescoring">加成与惩罚系数(打分之后的乘法)</h2>
+<p>模型打完分后,还有一串<strong>乘法系数</strong>逐个套用:</p>
+
+<table>
+<thead><tr><th>系数</th><th>数值</th><th>含义</th></tr></thead>
+<tbody>
+<tr><td>关注外内容衰减</td><td><span class="badge warn">×0.75</span></td><td>非粉丝看到你的帖子,分数打 75 折</td></tr>
+<tr><td>回复衰减</td><td><span class="badge warn">×0.75</span></td><td>回复别人的帖子,作为内容分发时打 75 折</td></tr>
+<tr><td>同作者多样性衰减</td><td><span class="badge warn">×1 → ×0.625 → ×0.4375…</span></td><td>同一刷新中你的第 2、3 条帖子按 <code>0.75×0.5^n+0.25</code> 递减,下限 ×0.25。<strong>刷屏无效</strong></td></tr>
+<tr><td>反馈疲劳</td><td><span class="badge neg">×0.2 起</span></td><td>某用户对你点过"不感兴趣"后,你的内容对他打 2 折,每 35 天恢复 0.2,<strong>140 天才满血</strong></td></tr>
+<tr><td>Grok 低质(Slop)衰减</td><td><span class="badge neg">×(0~1)</span></td><td>被 Grok 判定为"灌水/AI 水文"的内容直接乘衰减系数</td></tr>
+<tr><td>直播加成</td><td><span class="badge info">动态</span></td><td>仅限粉丝内容 + 作者粉丝 &gt; 100 万,小号无关</td></tr>
+</tbody>
+</table>
+<p class="src">出处:<code>home-mixer/.../scorer/RescoringFactorProvider.scala</code>、<code>DiversityDiscountProvider.scala</code>、<code>FeedbackFatigueScorer.scala</code>(140 天/下限 0.2)、<code>GrokSlopScoreRescorer.scala</code>、<code>ScoredTweetsParam.scala</code>(0.75 默认值)</p>
+
+<h3>过滤器(直接淘汰,不打折)</h3>
+<ul>
+<li>已看过 / 已推荐过的帖子及其祖先回复链</li>
+<li>同一作者去重(一次刷新一般只出你一条)</li>
+<li>媒体集群去重 —— <strong>搬运重复图片/视频会被识别并去重</strong></li>
+<li>Grok NSFW / 血腥内容过滤</li>
+<li>用户已静音/拉黑作者的所有内容</li>
+</ul>
+<p class="src">出处:<code>home-mixer/.../functional_component/filter/</code> 目录(18 个过滤器)</p>
+
+<h2 id="traffic">流量入口:你的帖子怎么被人看到</h2>
+<p>For You 时间线约 <strong>50% 来自关注关系</strong>(Earlybird 索引你关注的人近 7 天的帖子),<strong>50% 来自关注外推荐</strong>。关注外的四条通道:</p>
+
+<table>
+<thead><tr><th>通道</th><th>机制</th><th>对小号的意义</th></tr></thead>
+<tbody>
+<tr><td><strong>UTEG 点赞传播</strong></td><td>有人赞你 → 他的粉丝可能刷到"XX 赞了"。互动图只保留 <strong>24–48 小时</strong></td><td>1 个有真实粉丝的人的赞 &gt; 50 个僵尸赞(僵尸无粉丝,传播链断)</td></tr>
+<tr><td><strong>SimClusters 社区</strong></td><td>约 14.5 万个兴趣社区。你的"社区归属"由<strong>谁关注你、谁赞你</strong>决定,赞你的人的兴趣向量实时累加到你帖子的嵌入上</td><td>垂直深耕才能形成清晰的社区归属;杂粉、互赞会污染你的画像</td></tr>
+<tr><td><strong>搜索</strong></td><td>所有公开帖子进入搜索索引</td><td>与粉丝数无关,带领域关键词发帖,第一天就有流量可能</td></tr>
+<tr><td><strong>社群(Communities)</strong></td><td>独立候选管线,直接分发给社群成员</td><td>0 粉丝也能触达全社群,新号最被低估的入口</td></tr>
+</tbody>
+</table>
+<p class="src">出处:<code>README.md</code>(50% 比例)、<code>src/scala/.../user_tweet_entity_graph/README.md</code>(24–48h)、<code>simclusters_v2/README.md</code>、<code>ScoredTweetsRecommendationPipelineConfig.scala</code>(9 条候选管线)</p>
+
+<div class="card blue">
+<div class="card-title">💡 0 粉丝也不看粉丝数的第五个入口:回复区</div>
+你在任何热帖下的回复,对话页的所有读者可见——这是唯一完全无视粉丝数的曝光面。配合 +75 的"回复被作者互动"权重,<strong>回复区是小号的主战场,不是辅助</strong>。注意:垃圾回复会被折叠进对话"低质区"(见限流一节),拼质量不拼数量。
+</div>
+
+<h2 id="reputation">账号信誉(TweepCred)</h2>
+<p>每个账号有一个 0–100 的信誉分,基于 PageRank(类似谷歌给网页排名的算法):粉丝把信任"传导"给你,粉丝自己的信誉越高,传得越多。关键规则:</p>
+
+<table>
+<thead><tr><th>规则</th><th>数值</th><th>源码依据</th></tr></thead>
+<tbody>
+<tr><td>被封禁账号</td><td>基础分 = 0</td><td><code>if (isSuspended) 0</code></td></tr>
+<tr><td>认证账号</td><td>基础分 = <strong>100(满分)</strong></td><td><code>if (isVerified) 100</code></td></tr>
+<tr><td>普通账号上限</td><td>基础分最高 55</td><td>设备权重 0.55 × 账龄权重 × 100</td></tr>
+<tr><td>账龄权重</td><td><strong>30 天封顶</strong></td><td><code>if (age &gt; 30) 1.0</code></td></tr>
+<tr><td>被限制(restricted)账号</td><td>基础分 ×0.1</td><td><code>score *= 0.1</code></td></tr>
+<tr><td>关注比例惩罚(基础分)</td><td>关注 &gt; <strong>500</strong> 且 关注/粉丝 &gt; 0.6 时,指数衰减</td><td><code>UserMass.scala</code></td></tr>
+<tr><td>关注比例惩罚(PageRank)</td><td>关注 &gt; <strong>2500</strong> 时,最高<strong>除以 50</strong></td><td><code>Reputation.scala</code></td></tr>
+<tr><td>低信誉过滤</td><td>TweepCred &lt; 40 在关注推荐中被过滤</td><td><code>LowTweepCredFollowStore.scala</code></td></tr>
+</tbody>
+</table>
+<p class="src">出处:<code>src/scala/com/twitter/graph/batch/job/tweepcred/UserMass.scala</code>、<code>Reputation.scala</code></p>
+
+<div class="card green">
+<div class="card-title">✅ 破除谣言:关注别人不会害你</div>
+惩罚是<strong>双条件</strong>:关注数超过 500(信誉基础分)/ 2500(PageRank)<strong>且</strong>比例失衡才触发。0 粉新号关注 300 个同领域账号 = 零惩罚。需要避免的只是"关注几千人求回关"。安全线:<strong>500 个以内随便关;超过后保持 关注数 ≤ 0.6 × 粉丝数</strong>。
+</div>
+
+<h2 id="limits">限流与安全标签</h2>
+<p>"被限流"在代码里不是玄学,是具体的标签和动作。三档处置:</p>
+<ul>
+<li><strong>Drop(彻底隐藏)</strong>:内容/账号不再出现</li>
+<li><strong>Downrank(降权)</strong>:排到最后</li>
+<li><strong>对话折叠</strong>:回复被折叠进"显示更多"的低质区 / 辱骂区</li>
+</ul>
+
+<table>
+<thead><tr><th>标签</th><th>触发场景</th><th>后果</th></tr></thead>
+<tbody>
+<tr><td><code>NotGraduated</code></td><td>新账号"未毕业"</td><td>对非粉丝可能直接不展示;回复被折叠</td></tr>
+<tr><td><code>EngagementSpammer</code></td><td>互赞群、刷互动</td><td>Drop</td></tr>
+<tr><td><code>DuplicateContent</code></td><td>搬运/复读内容</td><td>Drop</td></tr>
+<tr><td><code>CopypastaSpam</code></td><td>复制粘贴热门帖</td><td>降权/折叠</td></tr>
+<tr><td><code>UntrustedUrl</code></td><td>回复区贴可疑链接</td><td>折叠进辱骂质量区</td></tr>
+<tr><td><code>HighToxicityScore</code></td><td>毒性模型(pToxicity)高分</td><td>按语言阈值降权</td></tr>
+<tr><td><code>NsfwHighPrecision</code> 等</td><td>NSFW 模型命中</td><td>Drop / 降权</td></tr>
+</tbody>
+</table>
+<p class="src">出处:<code>visibilitylib/.../UserLabelRules.scala</code>、<code>DownrankingRules.scala</code>、<code>trust_and_safety_models/README.md</code></p>
+
+<p>负反馈(拉黑/静音/举报/不感兴趣)按 <strong>1 天 / 7 天 / 30 天</strong>三个窗口统计——意味着负面记录 30 天后从统计桶里消失(但反馈疲劳的 140 天单独计时)。</p>
+<p class="src">出处:<code>representation-scorer/.../UserSignalServiceRecentEngagementsClient.scala</code></p>
+
+<h2 id="clocks">算法的七个时钟</h2>
+<p>整个系统是分层计时的。<strong>小时级时钟决定单条帖子的命运,日级时钟决定关系,周级时钟决定算法给你贴的标签,百日级时钟决定复利。</strong></p>
+
+<div class="figure">
+<svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif">
+  <line x1="40" y1="120" x2="730" y2="120" stroke="#e1e8ed" stroke-width="3"/>
+  <!-- clock points -->
+  <g>
+    <circle cx="70" cy="120" r="7" fill="#f4212e"/>
+    <text x="70" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#f4212e">30 分钟</text>
+    <text x="70" y="150" text-anchor="middle" font-size="10.5" fill="#536471">帖子热度特征</text>
+    <text x="70" y="164" text-anchor="middle" font-size="10.5" fill="#536471">半衰期</text>
+  </g>
+  <g>
+    <circle cx="180" cy="120" r="7" fill="#ffad1f"/>
+    <text x="180" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#b07c00">48 小时</text>
+    <text x="180" y="150" text-anchor="middle" font-size="10.5" fill="#536471">点赞传播窗口</text>
+    <text x="180" y="164" text-anchor="middle" font-size="10.5" fill="#536471">(UTEG)</text>
+  </g>
+  <g>
+    <circle cx="300" cy="120" r="7" fill="#00ba7c"/>
+    <text x="300" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#00ba7c">7 天</text>
+    <text x="300" y="150" text-anchor="middle" font-size="10.5" fill="#536471">人际边权半衰期</text>
+    <text x="300" y="164" text-anchor="middle" font-size="10.5" fill="#536471">每日更新一次</text>
+  </g>
+  <g>
+    <circle cx="420" cy="120" r="7" fill="#1d9bf0"/>
+    <text x="420" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#1d9bf0">每 7 天</text>
+    <text x="420" y="150" text-anchor="middle" font-size="10.5" fill="#536471">社区嵌入批任务</text>
+    <text x="420" y="164" text-anchor="middle" font-size="10.5" fill="#536471">("贴标签"周期)</text>
+  </g>
+  <g>
+    <circle cx="530" cy="120" r="7" fill="#1d9bf0"/>
+    <text x="530" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#1d9bf0">30 天</text>
+    <text x="530" y="150" text-anchor="middle" font-size="10.5" fill="#536471">账龄权重封顶</text>
+    <text x="530" y="164" text-anchor="middle" font-size="10.5" fill="#536471">负信号统计上限</text>
+  </g>
+  <g>
+    <circle cx="630" cy="120" r="7" fill="#794bc4"/>
+    <text x="630" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#794bc4">100 天</text>
+    <text x="630" y="150" text-anchor="middle" font-size="10.5" fill="#536471">每个赞对社区归属</text>
+    <text x="630" y="164" text-anchor="middle" font-size="10.5" fill="#536471">的贡献半衰期</text>
+  </g>
+  <g>
+    <circle cx="715" cy="120" r="7" fill="#f4212e"/>
+    <text x="715" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#f4212e">140 天</text>
+    <text x="715" y="150" text-anchor="middle" font-size="10.5" fill="#536471">"不感兴趣"惩罚</text>
+    <text x="715" y="164" text-anchor="middle" font-size="10.5" fill="#536471">完全恢复</text>
+  </g>
+  <text x="40" y="40" font-size="13" font-weight="700" fill="#536471">⏱ 从快到慢:七个同时运行的时钟</text>
+</svg>
+<div class="caption">每个时钟对应一类决策:发帖守第一小时、互动按天连续、定位按周稳定、声誉按季度积累。</div>
+</div>
+
+<table>
+<thead><tr><th>时钟</th><th>数值</th><th>对你的含义</th><th>出处</th></tr></thead>
+<tbody>
+<tr><td>实时互动聚合</td><td>半衰期 <strong>30 分钟</strong></td><td>发布后第一小时决定单条帖子的命运,守在评论区逐条回复</td><td><code>TimelinesOnlineAggregationConfigBase.scala</code></td></tr>
+<tr><td>UTEG 互动图</td><td><strong>24–48 小时</strong></td><td>48 小时没动静就翻篇,发下一条</td><td>UTEG README</td></tr>
+<tr><td>RealGraph 边权</td><td>日衰减 ×0.955,半衰期约 <strong>7 天</strong>;每日更新</td><td>断更一周,你和所有用户的关系强度掉一半。每天做一点 &gt; 周末爆肝</td><td><code>InteractionGraphAggregationConfig.scala</code></td></tr>
+<tr><td>Earlybird 索引</td><td><strong>7 天</strong></td><td>帖子进入推荐召回池的保质期</td><td>search README</td></tr>
+<tr><td>SimClusters 批任务</td><td><strong>每 7 天</strong>跑一次</td><td>本周的行为,下周才变成算法对你的"认知"。乱点赞污染画像,要一个周期才能洗掉</td><td><code>InterestedInFromKnownFor.scala</code> <code>batchIncrement=Days(7)</code></td></tr>
+<tr><td>点赞边半衰期</td><td><strong>100 天</strong></td><td>每个真实赞为你的社区归属持续充值三个多月——复利</td><td><code>ProducerNormsAndCounts.scala</code></td></tr>
+<tr><td>反馈疲劳</td><td>每 35 天恢复一档,<strong>140 天</strong>满血</td><td>得罪一个读者的代价要还四个多月</td><td><code>FeedbackFatigueScorer.scala</code></td></tr>
+</tbody>
+</table>
+
+<h2 id="pb-new">行动指南 ① 新号(0–30 天)</h2>
+<p><strong>处境:</strong>戴着 <code>NotGraduated</code> 标签,账龄权重未满,算法不知道你是谁。<strong>头 30 天的目标不是涨粉,是让算法学会你是谁 + 攒下第一批真实互动关系。</strong></p>
+<ul>
+<li><strong>Day 0:</strong>头像、简介、置顶帖全部到位(主页点击转化 +12);绑定有效设备;Premium 可选(信誉基础分 55 → 100);关注 100–300 个领域内账号(<strong>500 以内安全</strong>)——这是给算法的第一份"我是谁"申报材料</li>
+<li><strong>第 1 周:</strong>只做回复。每天 3–5 条认真的回复,目标是让几个有真实粉丝的同领域账号注意到你。自己的帖子随便发,当练手,别看数据</li>
+<li><strong>第 2 周:</strong>第一个嵌入周期落地,算法开始认识你。<strong>保持垂直,不乱点赞</strong>;开始在 2–3 个活跃社群发原创</li>
+<li><strong>第 3–4 周:</strong>原创放量,带可搜索的关键词。判断标准:回复区有稳定互动 → 内容对路,加码;没人理 → 改内容,不是被限流</li>
+<li><strong>第 30 天:</strong>账龄权重满格,新号标签影响期基本结束,开始正经冲原创</li>
+</ul>
+
+<h2 id="pb-zero">行动指南 ② 0 粉老号</h2>
+<p><strong>处境:</strong>比新号好——账龄满格 ✓、无新号标签 ✓、无负面记录 ✓。但和新号一样:没有关系边、没有社区归属。<strong>按新号打法走,免掉 30 天等待期,所有时钟从今天起算。</strong></p>
+<ul>
+<li>直接执行新号 Day 0 清单,然后从"第 1 周"开始,节奏一致</li>
+<li>优势:可以从第一天就放量,不用等标签毕业</li>
+<li>流量入口优先级:回复区 &gt; 社群 &gt; 搜索关键词 &gt; 等待第一个有粉丝的人点赞(UTEG)</li>
+</ul>
+
+<h2 id="pb-dormant">行动指南 ③ 沉睡老号复活(有粉丝但常年不发)</h2>
+<p><strong>处境:</strong>结构资产还在(信誉、粉丝关系、账龄),但行为资产已死:你和每个粉丝的互动边权衰减到零,<strong>粉丝在算法眼里是"碰巧关注了你的陌生人"</strong>;社区归属模糊。</p>
+<ul>
+<li><strong>先盘点:</strong>粉丝还活跃且方向相关 → 重点重连;大多僵尸或要换赛道 → 按 0 粉老号打法</li>
+<li><strong>头两周核心任务 = 重新点亮关系边:</strong>主动去还活跃的老粉丝帖子下回复、点赞,引导哪怕一次回赞。衰减和的设计意味着<strong>近期互动权重远高于远期</strong>,几次新互动就能压过多年沉默</li>
+<li><strong>自己先当一周活跃读者:</strong>重建你的兴趣信号,顺便完成重连</li>
+<li><strong>清理旧关注:</strong>当年互关时代关注了几千人的,修剪到安全线内(取关不伤你的信誉)</li>
+<li><strong>门面翻新</strong>后再开始发:老粉丝重新刷到你的第一眼,决定是回赞还是取关</li>
+<li><strong>预期:</strong>3–6 周重建到正常分发水平。若粉丝可见却连续数周零互动,怀疑账号带旧安全标签,考虑申诉或重开</li>
+</ul>
+
+<h2 id="pb-pivot">行动指南 ④ 换赛道</h2>
+<p><strong>处境:</strong>你的社区归属指向旧领域。直接发新领域内容 → 先推给旧粉丝 → 不感兴趣(−74)→ 出师不利。</p>
+<ul>
+<li><strong>顺序必须是"先互动,后发帖":</strong>先在新社区高强度互动 2–3 周(关注、点赞、回复新领域的人)</li>
+<li>等新社区的人开始赞你——他们的兴趣向量会实时重塑你帖子的嵌入和你的社区归属</li>
+<li>再放量发新领域原创。过渡期旧内容可以减量,不必清零</li>
+<li>记住周级时钟:每次定位调整,至少要 2 个批任务周期(约 14 天)才稳定</li>
+</ul>
+
+<h2 id="pb-daily">行动指南 ⑤ 每条帖子的标准动作</h2>
+<div class="card blue">
+<ol>
+<li><strong>发布时机:</strong>选你的目标读者在线的时段</li>
+<li><strong>守住第一小时</strong>(30 分钟半衰期):每条评论都回——每次回复都是 +75 的机会</li>
+<li><strong>48 小时复盘:</strong>有传播就继续维护;没动静就翻篇发下一条,内容沉淀给搜索(7 天召回 + 永久搜索索引)</li>
+<li><strong>永远不做:</strong>连发刷屏(第 2 条直接 ×0.625)、标题党(−74 起步)、买僵尸互动(传播链为空 = 纯浪费)、搬运重复内容(集群去重直接过滤)</li>
+</ol>
+</div>
+
+<h2 id="faq">常见问题 FAQ</h2>
+
+<h3>Q:一个新粉丝到底给我什么?他再点赞的概率很低吧?</h3>
+<p><strong>被动收益(他什么都不做也生效):</strong>① 给你的信誉持续输血(PageRank);② 投一张"你属于哪个社区"的票;③ 让你和他的所有粉丝变成二度关系(排序特征里的社交证明)。</p>
+<p><strong>主动收益(有保质期):</strong>关注那一刻,你们的关系边权处于峰值,他头几天最容易刷到你——<strong>这是一张 7 天试用期的订阅,不续费(互动)就静默退订</strong>。若窗口期内零互动,边权几周内归零,他变成"幽灵粉丝"。</p>
+<p><strong>操作:</strong>新粉丝关注后,主动去他帖子下回复一条有内容的——比等他来赞你快得多;换来他的回应就是 +75 级别信号,直接把边焊死。</p>
+
+<h3>Q:为什么百万粉的号也可能没流量?</h3>
+<p>粉丝不是余额,是需要定期充电的电池。关系边权 7 天半衰期,几年不互动全部归零,只剩被动收益。<strong>运营指标应该盯"每条帖子有多少老面孔互动",不是粉丝数。</strong></p>
+
+<h3>Q:买粉/买赞有用吗?</h3>
+<p>源码层面没用且有害:僵尸号没有粉丝,点赞传播链直接断(UTEG 白买);僵尸的兴趣向量是乱的,污染你的社区归属;刷互动触发 <code>EngagementSpammer</code> 标签 = Drop。</p>
+
+<h3>Q:我是不是被限流了?</h3>
+<p>先做排除法:回复区有人理吗?有 → 没限流,是内容分发量问题;完全死寂数周(粉丝可见仍零互动)→ 可能带安全标签,查<a href="#limits">限流一节</a>的触发场景,申诉或检查近期行为(可疑链接、批量操作、举报记录)。</p>
+
+<h3>Q:Premium(认证)值得买吗?</h3>
+<p>就信誉基础分而言,源码写死 <code>if (isVerified) mass = 100</code>,未认证上限 55。这是代码里能查到的部分;其他权益(编辑、长文等)另算。</p>
+
+<h3>Q:每天发几条合适?</h3>
+<p>同作者衰减(第 2 条 ×0.625)+ 集群去重决定了:<strong>每天 1–3 条高质量 &gt; 10 条灌水</strong>。把省下的时间花在回复区(+75 的金矿)。</p>
+
+<h2 id="sources">源码文件索引</h2>
+<table>
+<thead><tr><th>主题</th><th>文件(仓库内路径)</th></tr></thead>
+<tbody>
+<tr><td>权重公式与最后公开权重</td><td><code>the-algorithm-ml/projects/home/recap/README.md</code></td></tr>
+<tr><td>2025 动态权重参数</td><td><code>home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala</code></td></tr>
+<tr><td>15 个预测头</td><td><code>home-mixer/.../model/PredictedScoreFeature.scala</code></td></tr>
+<tr><td>加成/惩罚系数</td><td><code>home-mixer/.../scorer/RescoringFactorProvider.scala</code>、<code>DiversityDiscountProvider.scala</code></td></tr>
+<tr><td>反馈疲劳(140 天)</td><td><code>home-mixer/.../scorer/FeedbackFatigueScorer.scala</code></td></tr>
+<tr><td>Grok 低质衰减</td><td><code>home-mixer/.../scorer/GrokSlopScoreRescorer.scala</code></td></tr>
+<tr><td>信誉:基础分</td><td><code>src/scala/com/twitter/graph/batch/job/tweepcred/UserMass.scala</code></td></tr>
+<tr><td>信誉:PageRank 调整</td><td><code>src/scala/com/twitter/graph/batch/job/tweepcred/Reputation.scala</code></td></tr>
+<tr><td>限流标签</td><td><code>visibilitylib/.../UserLabelRules.scala</code>、<code>DownrankingRules.scala</code></td></tr>
+<tr><td>关系边衰减(7 天)</td><td><code>src/scala/com/twitter/interaction_graph/scio/agg_all/InteractionGraphAggregationConfig.scala</code></td></tr>
+<tr><td>社区嵌入周任务</td><td><code>src/scala/com/twitter/simclusters_v2/scalding/InterestedInFromKnownFor.scala</code></td></tr>
+<tr><td>点赞 100 天半衰期</td><td><code>src/scala/com/twitter/simclusters_v2/scalding/ProducerNormsAndCounts.scala</code></td></tr>
+<tr><td>实时聚合(30 分钟)</td><td><code>src/scala/com/twitter/timelines/prediction/common/aggregates/real_time/TimelinesOnlineAggregationConfigBase.scala</code></td></tr>
+<tr><td>召回信号总表</td><td><code>RETREIVAL_SIGNALS.md</code>(仓库根目录)</td></tr>
+</tbody>
+</table>
+
+<footer>
+本手册基于 <a href="https://github.com/twitter/the-algorithm" target="_blank">twitter/the-algorithm</a>(提交 c54bec0,2025-09-03)与 <a href="https://github.com/twitter/the-algorithm-ml" target="_blank">twitter/the-algorithm-ml</a> 整理。分析工具:Claude Fable 5。内容仅供参考,生产环境参数可能随时调整。<br>
+<a href="../en/">English version</a>
+</footer>
+
+</main>
+</div>
+</body>
+</html>
