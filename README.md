@@ -20,6 +20,7 @@ Open `index.html` for automatic language detection, or enable GitHub Pages on th
 | Traffic sources & the four doors that ignore follower count | 流量入口与四条不看粉丝数的通道 |
 | Account trust: TweepCred thresholds (500 / 2500 / ratio 0.6 / ÷50) | 账号信誉:TweepCred 阈值 |
 | Limits & safety labels (NotGraduated, EngagementSpammer, …) | 限流与安全标签 |
+| Behavior dictionary: what each action does, given & received (post / reply / like / bookmark / follow / unfollow / …) | 行为辞典:每个动作做出时与收到时的影响 |
 | The seven clocks (30 min → 140 days) | 算法的七个时钟 |
 | Playbooks: new account / 0-follower old account / dormant revival / niche pivot / per-post checklist | 行动指南:新号 / 0 粉老号 / 沉睡老号 / 换赛道 / 每帖清单 |
 | FAQ + full source-file index | FAQ + 源码文件索引 |

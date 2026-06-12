@@ -33,6 +33,10 @@
     <a href="#limits">Limits &amp; safety labels</a>
   </div>
   <div class="group">
+    <div class="group-title">Behaviors</div>
+    <a href="#behaviors">Behavior dictionary</a>
+  </div>
+  <div class="group">
     <div class="group-title">Time</div>
     <a href="#clocks">The seven clocks</a>
   </div>
@@ -243,6 +247,130 @@ The penalty needs <strong>two conditions at once</strong>: following more than 5
 
 <p>Negative feedback (block / mute / report / "not interested") is counted in <strong>1-day / 7-day / 30-day</strong> windows — old mistakes fall out of the stats after 30 days (but feedback fatigue runs its own 140-day timer).</p>
 <p class="src">Source: <code>representation-scorer/.../UserSignalServiceRecentEngagementsClient.scala</code></p>
+
+<h2 id="behaviors">Behavior dictionary: what every action does</h2>
+<p>Every action has two sides: <strong>when you do it</strong> (it shapes your profile and relationships) and <strong>when you receive it</strong> (it changes your post's score). The repo root file <code>RETREIVAL_SIGNALS.md</code> lists all 18 signals and exactly which systems consume each one. Here they are, one by one.</p>
+<p class="src">Signal-flow abbreviations: <strong>USS</strong>=User Signal Service · <strong>SC</strong>=SimClusters neighborhoods · <strong>TwHIN</strong>=knowledge-graph embeddings · <strong>UTEG</strong>=like-spread graph · <strong>FRS</strong>=follow recommendations · <strong>LR</strong>=light ranker</p>
+
+<h3>📝 Posting (original)</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Enters your followers' in-network candidate pool (7-day shelf life); your 2nd+ post in one refresh decays from ×0.625; duplicate media gets cluster-deduped; Grok tags content quality</td></tr>
+<tr><th>Key clocks</th><td>First hour (buzz features halve every 30 min) → 48 hours (like-spread window) → 7 days (candidate pool) → forever (search)</td></tr>
+<tr><th>Playbook</th><td>1–3 good posts a day; post when your readers are online; guard the first hour; silent after 48 hours = move on; <strong>never post in rapid bursts</strong></td></tr>
+</tbody>
+</table>
+
+<h3>💬 Replying</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Visible to everyone reading the conversation (<strong>the only surface that ignores follower count</strong>); distributed as content at ×0.75; charges the relationship edge between you two; spammy replies get folded into the low-quality section</td></tr>
+<tr><th>When you receive it</th><td><span class="badge pos">+13.5</span>; answer that reply and it triggers the game's biggest prize: <span class="badge pos">+75</span></td></tr>
+<tr><th>Signal flow</th><td>USS · TwHIN · UTEG · FRS · LR</td></tr>
+<tr><th>Playbook</th><td>A small account's main quest. 3–5 thoughtful replies a day; answer every comment under your own posts (each one is a +75 chance); quality over volume</td></tr>
+</tbody>
+</table>
+
+<h3>❤️ Liking (and unliking)</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Four effects: ① shapes your interest profile (decides what you see); ② may broadcast to your followers ("X liked", 48-hour window) — <strong>a like is a public endorsement</strong>; ③ your interest vector gets added to that post's profile in real time, helping it find its audience; ④ keeps funding the author's neighborhood label with a 100-day half-life</td></tr>
+<tr><th>When you receive it</th><td><span class="badge pos">+0.5</span> (weakest positive signal, but with hidden embedding and spread value); who likes you decides who your post gets shown to next</td></tr>
+<tr><th>Signal flow</th><td>Like: all six systems | Unlike: USS · SC (negative — withdraws the interest vote)</td></tr>
+<tr><th>Playbook</th><td>Like deliberately inside your niche — it's the cheapest support you can give and a vote for your own profile; <strong>random likes pollute your label for a full batch cycle (~a week)</strong></td></tr>
+</tbody>
+</table>
+
+<h3>🔁 Reposting &amp; quoting</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Distributes the content to your followers at full strength (no discount, same stage as originals); a quote also creates your own new post that can earn engagement; both count as repost signals shaping your profile</td></tr>
+<tr><th>When you receive it</th><td><span class="badge pos">+1</span> (quotes carry the same weight as reposts in Phoenix)</td></tr>
+<tr><th>Signal flow</th><td>USS · TwHIN · UTEG · FRS · LR</td></tr>
+<tr><th>Playbook</th><td>Quote beats plain repost: you gain a content surface and a conversation entry of your own. Reposting good niche content is a cheap way to stay daily-active and keep follower edges warm</td></tr>
+</tbody>
+</table>
+
+<h3>🔖 Bookmarking</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>A private positive signal (USS only) — not public, doesn't spread, quietly trains your profile</td></tr>
+<tr><th>When you receive it</th><td>New 2025 prediction head (<code>BookmarkParam</code>) with its own positive weight — <strong>"worth saving" is now rewarded on its own</strong></td></tr>
+<tr><th>Signal flow</th><td>USS</td></tr>
+<tr><th>Playbook</th><td>Deliberately make save-worthy formats: checklists, tutorials, comparison tables, reference posts. Bookmark rate is one of the best new metrics to watch in analytics</td></tr>
+</tbody>
+</table>
+
+<h3>📤 Sharing &amp; screenshots</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Shares (including copy-link and off-platform shares) feed USS / FRS; a strong interest statement</td></tr>
+<tr><th>When you receive it</th><td>New 2025 Share prediction head (Phoenix tracks 3 share actions); <strong>screenshots are their own prediction head too</strong> (<code>ScreenshotParam</code>) — getting screenshotted earns points</td></tr>
+<tr><th>Signal flow</th><td>USS · FRS</td></tr>
+<tr><th>Playbook</th><td>Make content people forward to group chats; self-contained, one-screen layouts are screenshot-friendly. "Worth sending to a friend" is the new banger standard</td></tr>
+</tbody>
+</table>
+
+<h3>➕ Following</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>The strongest profile vote there is: all six systems consume it, often as both feature and training label. <strong>Up to 500 follows is penalty-free</strong>; past that, keep following ≤ 0.6 × followers</td></tr>
+<tr><th>When you receive it</th><td>Passive: trust inflow (PageRank) + a neighborhood vote + you become a "friend of a friend" to all their followers. Active: edge strength peaks at the follow moment — <strong>a 7-day trial</strong> that silently zeroes out without interaction</td></tr>
+<tr><th>Signal flow</th><td>USS · SC · TwHIN · UTEG · FRS</td></tr>
+<tr><th>Playbook</th><td>Treat your follow list as a "what's my niche" declaration form; <strong>when someone follows you, go reply to one of their posts</strong> — weld the edge shut while it's hot, much faster than waiting for their like</td></tr>
+</tbody>
+</table>
+
+<h3>➖ Unfollowing</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Recorded as a "recently unfollowed" signal (USS feature) that shapes what gets recommended to you; <strong>does not directly hurt your own trust score</strong> — pruning is safe</td></tr>
+<tr><th>When you receive it</th><td>You lose that person's trust inflow and in-network eligibility; follow-then-unfollow games leave a data trail</td></tr>
+<tr><th>Signal flow</th><td>USS</td></tr>
+<tr><th>Playbook</th><td>Prune old follow-for-follow lists boldly (especially if you follow 2,500+); never play the follow/unfollow game</td></tr>
+</tbody>
+</table>
+
+<h3>🔇 Muting &amp; blocking</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>USS / FRS features — the system stops recommending those accounts to you; <strong>cleaning your timeline = improving your own consumption profile</strong>. Use freely</td></tr>
+<tr><th>When you receive it</th><td>Counts into the negative-feedback group (the <span class="badge neg">−74</span> tier), tracked in 1/7/30-day windows; pile up enough and account-level labels trigger</td></tr>
+<tr><th>Signal flow</th><td>USS · FRS</td></tr>
+<tr><th>Playbook</th><td>Avoid block-magnet behavior: @-spamming, promo comments under strangers' posts, showing up too often in the wrong people's feeds</td></tr>
+</tbody>
+</table>
+
+<h3>👎 "Not interested"</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>Trains your own feed (USS feature); hits the author at the −74 tier</td></tr>
+<tr><th>When you receive it</th><td><span class="badge neg">−74</span> (≈ erases 148 likes) + <strong>140 days of feedback fatigue from that user</strong> (your posts start at ×0.2 for them, recovering one step every 35 days)</td></tr>
+<tr><th>Signal flow</th><td>USS</td></tr>
+<tr><th>Playbook</th><td>The most underrated liability in the system. Trend-jacking to the wrong crowd, clickbait, and hard selling are all net losses by the math — <strong>reach 100 right people, never bother 10,000 wrong ones</strong></td></tr>
+</tbody>
+</table>
+
+<h3>🚨 Reporting</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>USS feature, trains your feed</td></tr>
+<tr><th>When you receive it</th><td><span class="badge neg">−369</span> (the heaviest penalty in the system, ≈ erases 738 likes); high report rates trigger safety labels like <code>HighPReportedTweetScore</code> → downrank / folding</td></tr>
+<tr><th>Signal flow</th><td>USS</td></tr>
+<tr><th>Playbook</th><td>The red-line list: rage bait, rule-edge testing, mass DMs, sketchy links. One report costs more than one banger earns</td></tr>
+</tbody>
+</table>
+
+<h3>👀 Browsing (clicks / dwell / video / profile visits)</h3>
+<table>
+<tbody>
+<tr><th style="width:130px">When you do it</th><td>All implicit signals quietly shaping your profile: detail-page clicks (USS/FRS, LR training labels), watching videos past a seconds/percentage bar (USS/SC, LR labels), notification opens and Notifications-tab clicks (USS/SC/TwHIN/FRS)</td></tr>
+<tr><th>When you receive it</th><td>Open + stay 2 minutes <span class="badge pos">+10–11</span>; profile visit that converts <span class="badge pos">+12</span>; video watch time counted to the millisecond (<code>VideoWatchTimeMsParam</code>); dwell is its own prediction head</td></tr>
+<tr><th>Signal flow</th><td>USS · SC · FRS · LR (varies by action)</td></tr>
+<tr><th>Playbook</th><td>Build "open it and stay" structure: a first-line hook, long posts that fold, images that carry detail; videos need ≥10 seconds to enter the quality-view system; make your profile worth the click — the pinned post is your +12 landing page</td></tr>
+</tbody>
+</table>
+<p class="src">Sources for this section: <code>RETREIVAL_SIGNALS.md</code> (18 signals × 6 systems matrix), <code>PredictedScoreFeature.scala</code>, <code>PhoenixPredictedScoreFeature.scala</code>, <code>FeedbackFatigueScorer.scala</code>, UTEG README</p>
 
 <h2 id="clocks">The seven clocks</h2>
 <p>The whole system runs on timers, like ovens in a kitchen. <strong>Hour-level clocks decide a post's fate. Day-level clocks decide relationships. Week-level clocks decide your label. Hundred-day clocks decide compound interest.</strong></p>

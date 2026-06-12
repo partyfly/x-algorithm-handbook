@@ -33,6 +33,10 @@
     <a href="#limits">限流与安全标签</a>
   </div>
   <div class="group">
+    <div class="group-title">行为</div>
+    <a href="#behaviors">行为辞典:每个动作的影响</a>
+  </div>
+  <div class="group">
     <div class="group-title">时间</div>
     <a href="#clocks">算法的七个时钟</a>
   </div>
@@ -249,6 +253,130 @@
 
 <p>负反馈(拉黑/静音/举报/不感兴趣)按 <strong>1 天 / 7 天 / 30 天</strong>三个窗口统计——意味着负面记录 30 天后从统计桶里消失(但反馈疲劳的 140 天单独计时)。</p>
 <p class="src">出处:<code>representation-scorer/.../UserSignalServiceRecentEngagementsClient.scala</code></p>
+
+<h2 id="behaviors">行为辞典:每个动作的影响</h2>
+<p>每个行为都有两个面:<strong>你做出它</strong>(塑造你的画像和关系)和<strong>你收到它</strong>(影响你的帖子得分)。源码根目录的 <code>RETREIVAL_SIGNALS.md</code> 列出了全部 18 种信号分别被哪些系统消费,本节逐个整理。</p>
+<p class="src">信号流向缩写:<strong>USS</strong>=用户信号服务 · <strong>SC</strong>=SimClusters 社区嵌入 · <strong>TwHIN</strong>=知识图嵌入 · <strong>UTEG</strong>=点赞传播图 · <strong>FRS</strong>=关注推荐 · <strong>LR</strong>=轻排序</p>
+
+<h3>📝 发帖(原创)</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>进入粉丝的关注内候选池(7 天保质期);同一刷新中你的第 2 条起按 ×0.625 递减;重复媒体被集群去重;内容被 Grok 打质量标签</td></tr>
+<tr><th>关键时钟</th><td>第一小时(热度特征 30 分钟半衰期)→ 48 小时(点赞传播窗口)→ 7 天(召回池)→ 永久(搜索)</td></tr>
+<tr><th>指南</th><td>每天 1–3 条高质量;选目标读者在线时段;守住第一小时;48 小时没动静就翻篇;<strong>永远不连发刷屏</strong></td></tr>
+</tbody>
+</table>
+
+<h3>💬 回复</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>对话页所有读者可见(<strong>唯一不看粉丝数的曝光面</strong>);作为推荐内容分发时 ×0.75;为你和对方的关系边充值;低质回复被折叠进对话低质区</td></tr>
+<tr><th>你收到时</th><td><span class="badge pos">+13.5</span>;你再回应这条回复 → 触发全系统最高的 <span class="badge pos">+75</span></td></tr>
+<tr><th>信号流向</th><td>USS · TwHIN · UTEG · FRS · LR</td></tr>
+<tr><th>指南</th><td>小号的主战场。每天 3–5 条认真回复;自己帖子下每条评论必回(每次都是 +75 的机会);拼质量不拼数量</td></tr>
+</tbody>
+</table>
+
+<h3>❤️ 点赞(与取消赞)</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>四重效果:① 塑造你的兴趣画像(决定你看到什么);② 可能广播给你的粉丝("XX 赞了",48 小时窗口)——<strong>点赞是公开背书</strong>;③ 你的兴趣向量实时累加进对方帖子的嵌入,帮它找到受众;④ 以 100 天半衰期持续为对方的社区归属充值</td></tr>
+<tr><th>你收到时</th><td><span class="badge pos">+0.5</span>(最弱正信号,但有嵌入和传播的隐藏价值);赞你的人的画像决定你的帖子接下来推给谁</td></tr>
+<tr><th>信号流向</th><td>点赞:全部六个系统 | 取消赞:USS · SC(负信号,撤销兴趣投票)</td></tr>
+<tr><th>指南</th><td>领域内认真点赞——既是给对方的最便宜支持,也是给自己画像投票;<strong>乱点赞污染画像,要一个批任务周期(约一周)才能稀释</strong></td></tr>
+</tbody>
+</table>
+
+<h3>🔁 转推与引用</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>把内容全量分发给你的粉丝(与原创同台,无衰减);引用同时生成你自己的新帖子,可积累互动;两者都计入转推信号塑造你的画像</td></tr>
+<tr><th>你收到时</th><td><span class="badge pos">+1</span>(引用在 Phoenix 中与转推同权重)</td></tr>
+<tr><th>信号流向</th><td>USS · TwHIN · UTEG · FRS · LR</td></tr>
+<tr><th>指南</th><td>引用优于纯转推:多一个你自己的内容面和对话入口。转发领域内优质内容是维持日更、喂养粉丝关系边的低成本动作</td></tr>
+</tbody>
+</table>
+
+<h3>🔖 收藏</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>私密正信号(仅入 USS),不公开、不传播,安静地训练你的画像</td></tr>
+<tr><th>你收到时</th><td>2025 新增独立预测头(<code>BookmarkParam</code>),有独立正权重——<strong>"值得收藏"被算法单独奖励</strong></td></tr>
+<tr><th>信号流向</th><td>USS</td></tr>
+<tr><th>指南</th><td>刻意做"值得收藏"的内容形态:清单、教程、对照表、可反复查的参考。收藏率是后台最值得盯的新指标之一</td></tr>
+</tbody>
+</table>
+
+<h3>📤 分享与截图</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>分享(含复制链接、站外分享)进入 USS / FRS;是强烈的兴趣表达</td></tr>
+<tr><th>你收到时</th><td>2025 新增 Share 预测头(Phoenix 追踪 3 种分享行为);<strong>截图也是独立预测头</strong>(<code>ScreenshotParam</code>)——被截图 = 被算法记一笔正分</td></tr>
+<tr><th>信号流向</th><td>USS · FRS</td></tr>
+<tr><th>指南</th><td>内容做成"会被转发到群里"的形态;排版自包含、单屏可读 = 截图友好。"这条值得发给朋友"是新的爆款标准</td></tr>
+</tbody>
+</table>
+
+<h3>➕ 关注</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>最强的画像投票:六个系统全部消费,且多处既当特征又当训练标签。<strong>500 个以内随便关,零惩罚</strong>;超过后保持 关注 ≤ 0.6 × 粉丝</td></tr>
+<tr><th>你收到时</th><td>被动:信誉输血(PageRank)+ 社区归属投票 + 你成为他所有粉丝的"二度关系"。主动:关注瞬间关系边权峰值,<strong>7 天试用期</strong>,不互动则静默归零</td></tr>
+<tr><th>信号流向</th><td>USS · SC · TwHIN · UTEG · FRS</td></tr>
+<tr><th>指南</th><td>把关注当"领域申报表"认真填;<strong>新粉丝关注你后,主动去他帖子下回一条有内容的</strong>——趁边权峰值把关系焊死,比等他来赞快得多</td></tr>
+</tbody>
+</table>
+
+<h3>➖ 取关</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>被记录为"最近取关"信号(USS 特征),影响推荐给你的内容;<strong>不直接损伤你自己的信誉</strong>——修剪关注列表是安全的</td></tr>
+<tr><th>你收到时</th><td>失去这个人的信任传导和关注内候选资格;"先关后取"的涨粉套路在数据层面留痕</td></tr>
+<tr><th>信号流向</th><td>USS</td></tr>
+<tr><th>指南</th><td>大胆修剪旧时代的互关列表(尤其关注数超过 2500 的);永远别玩 follow/unfollow 游戏</td></tr>
+</tbody>
+</table>
+
+<h3>🔇 静音与拉黑</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>USS / FRS 特征,系统停止向你推荐相关账号;<strong>清理自己的时间线 = 改善自己的消费画像</strong>,放心用</td></tr>
+<tr><th>你收到时</th><td>计入负反馈组(权重 <span class="badge neg">−74</span> 一档),按 1/7/30 天窗口统计;累积过多触发账号级标签</td></tr>
+<tr><th>信号流向</th><td>USS · FRS</td></tr>
+<tr><th>指南</th><td>避免招致拉黑的行为:@轰炸、评论区刷推广、高频出现在不相关人群的时间线里</td></tr>
+</tbody>
+</table>
+
+<h3>👎 "不感兴趣"</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>训练你自己的 feed(USS 特征),对作者产生 −74 级别影响</td></tr>
+<tr><th>你收到时</th><td><span class="badge neg">−74</span>(≈ 抹掉 148 个赞)+ <strong>该用户对你 140 天反馈疲劳</strong>(从 ×0.2 起步,每 35 天恢复一档)</td></tr>
+<tr><th>信号流向</th><td>USS</td></tr>
+<tr><th>指南</th><td>整个系统里最被低估的负资产。蹭热点发给错的人群、标题党、硬广,数学上都是净亏损——<strong>宁可触达 100 个对的人,不打扰 10000 个错的人</strong></td></tr>
+</tbody>
+</table>
+
+<h3>🚨 举报</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>USS 特征,训练你的 feed</td></tr>
+<tr><th>你收到时</th><td><span class="badge neg">−369</span>(全系统最重惩罚,≈ 抹掉 738 个赞);高举报率触发 <code>HighPReportedTweetScore</code> 等安全标签 → 降权/折叠</td></tr>
+<tr><th>信号流向</th><td>USS</td></tr>
+<tr><th>指南</th><td>红线清单:争议钓鱼、违规边缘试探、批量私信、可疑链接。一次举报的代价远超一条爆款的收益</td></tr>
+</tbody>
+</table>
+
+<h3>👀 浏览行为(点击 / 停留 / 看视频 / 访问主页)</h3>
+<table>
+<tbody>
+<tr><th style="width:110px">你做出时</th><td>全部是隐式信号,安静地塑造你的画像:点击详情页(USS/FRS,LR 训练标签)、视频观看到一定秒数/比例(USS/SC,LR 标签)、通知打开与通知页点击(USS/SC/TwHIN/FRS)</td></tr>
+<tr><th>你收到时</th><td>点进对话并停留 ≥2 分钟 <span class="badge pos">+10~11</span>;主页访问并互动 <span class="badge pos">+12</span>;视频观看时长毫秒级计入(<code>VideoWatchTimeMsParam</code>);停留(Dwell)是独立预测头</td></tr>
+<tr><th>信号流向</th><td>USS · SC · FRS · LR(因行为而异)</td></tr>
+<tr><th>指南</th><td>写"让人点开并留下"的结构:首行钩子、长文折叠、图片承载细节;视频 ≥10 秒才进质量观看体系;主页必须值得点——置顶帖是 +12 转化的着陆页</td></tr>
+</tbody>
+</table>
+<p class="src">本节出处:<code>RETREIVAL_SIGNALS.md</code>(18 种信号 × 6 系统消费矩阵)、<code>PredictedScoreFeature.scala</code>、<code>PhoenixPredictedScoreFeature.scala</code>、<code>FeedbackFatigueScorer.scala</code>、UTEG README</p>
 
 <h2 id="clocks">算法的七个时钟</h2>
 <p>整个系统是分层计时的。<strong>小时级时钟决定单条帖子的命运,日级时钟决定关系,周级时钟决定算法给你贴的标签,百日级时钟决定复利。</strong></p>
