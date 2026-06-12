@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeChat Official Account Playbook — Traffic Strategy Reverse-Engineered from Official Docs</title>
+<meta name="description" content="WeChat doesn't open-source its algorithm. This playbook reverse-engineers it from official operation rules, the recommendation guidelines, the analytics metrics it exposes, and founder statements. Every claim carries an evidence grade.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="./">𝕏 Algorithm <span>Handbook</span></a>
+  <div class="spacer"></div>
+  <a class="lang" href="../zh/wechat.html">中文</a>
+  <a class="gh" href="https://github.com/partyfly/x-algorithm-handbook" target="_blank">GitHub ↗</a>
+</div>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="group">
+    <div class="group-title">This page</div>
+    <a href="#method">Method & evidence grades</a>
+    <a href="#arch">The three-layer funnel</a>
+    <a href="#gates">Eligibility: three switches</a>
+    <a href="#signals">Signals: the metrics recipe</a>
+    <a href="#redlines">Red lines & penalties</a>
+    <a href="#vs">X vs WeChat compared</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Playbooks</div>
+    <a href="#pb-publish">Per-article checklist</a>
+    <a href="#pb-new">Starting a new account</a>
+    <a href="#pb-loyal">Building regular readers</a>
+    <a href="#pb-review">Review cadence</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Back</div>
+    <a href="./">← Handbook home</a>
+    <a href="timing.html">Action timing + clock tool</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<h1>WeChat Official Account Playbook</h1>
+<p class="subtitle">WeChat doesn't open-source its algorithm. But its traffic strategy can be reverse-engineered from three official mirrors: the analytics metrics it exposes (what it measures), the operation rules (what it punishes), and founder statements (what it wants). Every claim below carries an evidence grade.</p>
+
+<div class="disclaimer">
+⚠️ <strong>About the evidence:</strong> unlike the X handbook, this page reverse-engineers a closed system. Four grades: <span class="badge pos">Official</span> = written rules; <span class="badge info">Doctrine</span> = Allen Zhang / WeChat Open Class statements; <span class="badge warn">Metrics</span> = data dimensions the analytics dashboard exposes (what's measured ≈ what's optimized); <span class="badge neg">Third-party</span> = operator-community observations, unconfirmed — treat as rumor. All specific multipliers floating around (e.g. "1.3× boost for read-through") are third-party; this page trusts directions, never numbers.
+</div>
+
+<h2 id="method">Method</h2>
+<ul>
+<li><strong>Dashboard metrics = the algorithm's recipe.</strong> Whatever data the platform shows you (read-completion rate, regular readers, "Wow" taps, share cascades) is what it measures — and what it measures is what it optimizes.</li>
+<li><strong>The penalty list = the algorithm's negative weights.</strong> The Operation Rules and Recommendation Guidelines spell out, item by item, what won't be recommended and what gets banned — more reliable than any leak.</li>
+<li><strong>Founder statements = the objective function.</strong> Allen Zhang's "1:2:10" and "social recommendation is the most human way to discover information" give the system's long-term direction.</li>
+</ul>
+
+<h2 id="arch">The three-layer funnel</h2>
+
+<div class="figure">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif">
+  <defs>
+    <marker id="warr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#00ba7c"/>
+    </marker>
+  </defs>
+  <rect x="20" y="30" width="220" height="110" rx="14" fill="#1d9bf0" opacity="0.10"/>
+  <text x="130" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#1d9bf0">① Subscriptions (base)</text>
+  <text x="130" y="82" text-anchor="middle" font-size="11" fill="#536471">subscription feed</text>
+  <text x="130" y="98" text-anchor="middle" font-size="11" fill="#536471">"regular readers" pin bar</text>
+  <text x="130" y="114" text-anchor="middle" font-size="11" fill="#536471">key variable: reader habit</text>
+  <rect x="270" y="30" width="220" height="110" rx="14" fill="#00ba7c" opacity="0.10"/>
+  <text x="380" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#00ba7c">② Social graph (amplifier)</text>
+  <text x="380" y="82" text-anchor="middle" font-size="11" fill="#536471">Friends♡ (evolved from "Wow")</text>
+  <text x="380" y="98" text-anchor="middle" font-size="11" fill="#536471">chat forwards, Moments</text>
+  <text x="380" y="114" text-anchor="middle" font-size="11" fill="#536471">key variable: Wow rate, forwards</text>
+  <rect x="520" y="30" width="220" height="110" rx="14" fill="#794bc4" opacity="0.10"/>
+  <text x="630" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#794bc4">③ Machine recs (ceiling)</text>
+  <text x="630" y="82" text-anchor="middle" font-size="11" fill="#536471">feed rec cards, Top Stories</text>
+  <text x="630" y="98" text-anchor="middle" font-size="11" fill="#536471">Search (long tail)</text>
+  <text x="630" y="114" text-anchor="middle" font-size="11" fill="#536471">key variables: read-through, eligibility</text>
+  <line x1="244" y1="85" x2="266" y2="85" stroke="#00ba7c" stroke-width="2.5" marker-end="url(#warr)"/>
+  <line x1="494" y1="85" x2="516" y2="85" stroke="#00ba7c" stroke-width="2.5" marker-end="url(#warr)"/>
+  <text x="60" y="190" font-size="13" font-weight="700" fill="#536471">Allen Zhang's target ratio (2021 Open Class, stated for Channels; Official Accounts follow the same track):</text>
+  <rect x="60" y="205" width="56" height="34" rx="8" fill="#1d9bf0" opacity="0.15"/>
+  <text x="88" y="227" text-anchor="middle" font-size="14" font-weight="800" fill="#1d9bf0">1</text>
+  <text x="135" y="227" font-size="12" fill="#536471">following</text>
+  <rect x="200" y="205" width="112" height="34" rx="8" fill="#00ba7c" opacity="0.15"/>
+  <text x="256" y="227" text-anchor="middle" font-size="14" font-weight="800" fill="#00ba7c">2</text>
+  <text x="330" y="227" font-size="12" fill="#536471">friends</text>
+  <rect x="390" y="205" width="280" height="34" rx="8" fill="#794bc4" opacity="0.15"/>
+  <text x="530" y="227" text-anchor="middle" font-size="14" font-weight="800" fill="#794bc4">10</text>
+  <text x="688" y="227" font-size="12" fill="#536471">machine</text>
+</svg>
+<div class="caption">WeChat = subscriptions as the base + social graph as the amplifier + machine recommendations as the ceiling. "Light on subscriptions, heavy on recommendations" is the stated direction.</div>
+</div>
+
+<p><span class="badge info">Doctrine</span> Allen Zhang, 2019: "social recommendation is the most human way to get information"; in 2021 he wrote the target ratio <strong>1 : 2 : 10</strong> (following : friends : machine).</p>
+<p><span class="badge pos">Official</span> The "Wow" tap evolved into a standalone <strong>Friends♡</strong> entry, placed before subscribed content in the feed; the team keeps expanding the test.</p>
+<p><span class="badge neg">Evidence</span> 36Kr's small account "36Kr Future Consumption": recommendation traffic grew from <strong>24.3%</strong> (2023-08) to <strong>45.9%</strong> (2025-03) of total reads; their flagship account sits at just 2.2% — <strong>the smaller the account, the bigger the recommendation share</strong>.</p>
+
+<div class="card green">
+<div class="card-title">✅ The one-line takeaway</div>
+The Official Account platform is no longer a subscription medium. For small accounts, <strong>about half the traffic comes from recommendations</strong> — your real arena is the rec pool and the Friends♡ social chain. Follower count is just the foundation.
+</div>
+
+<h2 id="gates">Eligibility: three binary switches (gates, not weights)</h2>
+<p><span class="badge pos">Official</span> The biggest contrast with X's continuous weights: WeChat uses <strong>binary gates</strong>. Miss any one and recommendation traffic is exactly zero:</p>
+
+<table>
+<thead><tr><th>Switch</th><th>Requirement</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>① Original</td><td><strong>Must declare originality</strong></td><td>Official wording: "reposted and group-segmented content will not be recommended." Originality isn't a bonus — it's the <strong>ticket</strong></td></tr>
+<tr><td>② Full broadcast</td><td>No audience-segmented publishing</td><td>Segmenting = surrendering eligibility</td></tr>
+<tr><td>③ Rec permission</td><td>"Don't allow platform recommendation" unchecked</td><td>Once checked it's <strong>irreversible</strong> — verify before publishing</td></tr>
+</tbody>
+</table>
+
+<p>The originality declaration has its own gate (<span class="badge pos">Official</span>): public-domain content (laws/news/score lines), marketing copy, and non-exclusively-licensed translations <strong>may not be declared original</strong>; violations strip the badge and penalize the account.</p>
+
+<h2 id="signals">Signals: the dashboard is the recipe</h2>
+<p><span class="badge warn">Metrics</span> Whatever the platform shows you, it optimizes:</p>
+
+<table>
+<thead><tr><th>Dashboard metric</th><th>Inferred algorithm signal</th><th>X equivalent</th></tr></thead>
+<tbody>
+<tr><td><strong>Read-completion rate</strong></td><td>Core quality signal: title-content match, immersion</td><td>dwell time</td></tr>
+<tr><td><strong>Regular readers</strong></td><td>User-account relationship strength; drives feed ranking and the pin bar</td><td><strong>RealGraph edge weight</strong> (near-isomorphic)</td></tr>
+<tr><td><strong>"Wow" taps</strong></td><td>Public endorsement, feeds friends' Friends♡ stream directly</td><td><strong>Like → UTEG spread</strong> (near-isomorphic)</td></tr>
+<tr><td>First/second-wave spread ratio</td><td>Viral coefficient, breakout ability</td><td>repost/quote chains</td></tr>
+<tr><td>Delivery-to-open rate</td><td>Title + cover conversion</td><td>preview click-through</td></tr>
+<tr><td>Read-source breakdown</td><td>The official distribution surfaces: chat / Moments / Top Stories / recs / search</td><td>multi-channel retrieval</td></tr>
+<tr><td>Saves / likes</td><td>Retention value</td><td>bookmark (2025 prediction head)</td></tr>
+</tbody>
+</table>
+
+<p><span class="badge neg">Third-party</span> Circulating specifics — "3 seconds at the bottom counts as completion", "1.3× boost", "NLP interest tags", "~7-day rec cycle" — match the direction of the metrics but the numbers are unverifiable. Treat as rumor.</p>
+
+<h2 id="redlines">Red lines & penalties: sudden death, not slow bleed</h2>
+<p><span class="badge pos">Official</span> X prices bad behavior with negative weights (−74, slow bleed); WeChat administers punishment directly (sudden death):</p>
+
+<table>
+<thead><tr><th>Behavior</th><th>Official classification</th><th>Consequence</th></tr></thead>
+<tbody>
+<tr><td>Incentivized/forced sharing to Moments</td><td>Inducement</td><td><span class="badge neg">First offense: 30-day ban</span> + induced followers removed + ad revenue off; <strong>second offense: permanent ban</strong></td></tr>
+<tr><td>Clickbait titles (shock/command/obfuscated glyphs)</td><td>Not recommended + violation</td><td>Deletion → capability limits → ban (escalating)</td></tr>
+<tr><td>Redirect bait (rule 5.4: incomplete content steering elsewhere)</td><td>Not recommended</td><td>Eligibility zeroed; ad-revenue scams get deletion/follower removal/bans</td></tr>
+<tr><td>Pure marketing, stale news, low-quality filler</td><td>Not recommended</td><td>Zero rec traffic</td></tr>
+<tr><td>AIGC misinformation, one-click AI sludge</td><td>False information</td><td>Not recommended; misinformation penalized per rules</td></tr>
+<tr><td>Bought followers / fake reads</td><td>Fake engagement</td><td>Permanent weight damage (<span class="badge neg">third-party</span>); fake reads are detectable from completion curves (early-exit = bot signature)</td></tr>
+<tr><td>Repeat violations across one owner's accounts</td><td>Recidivism</td><td>Owner refused all future registration/verification</td></tr>
+</tbody>
+</table>
+
+<div class="card red">
+<div class="card-title">🚫 The core difference</div>
+Cutting corners on X costs you <strong>expected value</strong>. Cutting corners on WeChat costs you <strong>the account</strong>. WeChat doesn't negotiate.
+</div>
+
+<h2 id="vs">X vs WeChat: the same job, opposite designs</h2>
+
+<table>
+<thead><tr><th>Dimension</th><th>X (open-source, verified)</th><th>WeChat (officially inferred)</th></tr></thead>
+<tbody>
+<tr><td>System character</td><td>Auction house: continuous weights price every action</td><td>Members' club: qualify first, then compete on quality</td></tr>
+<tr><td>Relationship strength</td><td>RealGraph edges (7-day half-life)</td><td>Regular readers (isomorphic; decay unknown)</td></tr>
+<tr><td>Public-endorsement spread</td><td>Like → UTEG "X liked" (48h window)</td><td>"Wow" → Friends♡ entry</td></tr>
+<tr><td>Core quality signal</td><td>dwell / bookmark / video watch time</td><td>read-completion / saves</td></tr>
+<tr><td>Originality</td><td>No such concept (only cluster dedup)</td><td><strong>The ticket to recommendation</strong></td></tr>
+<tr><td>Punishment style</td><td>Soft weights: −74 / −369 / 140-day fatigue</td><td>Hard penalties: deletion / 30-day / permanent ban</td></tr>
+<tr><td>New accounts</td><td>NotGraduated wall, 30-day age ramp</td><td>Rec-friendly from day one; small accounts get a higher rec share</td></tr>
+<tr><td>A post's clock</td><td>The first hour (30-min buzz half-life)</td><td>3–7 days (long rec cycle, decoupled from publish time)</td></tr>
+<tr><td>Cold-start play</td><td>Earn relationships in replies first, then push originals</td><td><strong>Bet everything on content quality from day one</strong></td></tr>
+</tbody>
+</table>
+
+<h2 id="pb-publish">Playbook ① Per-article checklist</h2>
+<div class="card blue">
+<ol>
+<li><strong>Three-switch check</strong>: originality declared ✓ full broadcast (no segments) ✓ "don't recommend" unchecked ✓ — miss one and recs are zero</li>
+<li><strong>Restrained titles</strong>: summarize accurately; no shock, no commands, no cliffhanger bait. Clickbait here is a ban risk, not a growth hack</li>
+<li><strong>Structure for read-through</strong>: open with the article's value promise; section headers + figures + bolded takeaways; long-form ≠ rambling</li>
+<li><strong>Close with a natural "Wow" prompt</strong> (no rewards): Wow feeds the Friends♡ stream. <strong>Never</strong> "share to Moments for a gift" — that's the 30-day-ban line</li>
+<li><strong>No redirect bait in the body</strong>: QR codes, "click for the full version", third-party funnels — rule 5.4 zeroes your eligibility</li>
+<li><strong>No first-hour vigil needed</strong>: the rec cycle runs 3–7 days. Spend that hour writing tomorrow's piece instead</li>
+</ol>
+</div>
+
+<h2 id="pb-new">Playbook ② Starting a new account (the opposite of X)</h2>
+<ul>
+<li><strong>No cold-start purgatory</strong>: the rec pool is open to new accounts (36Kr's small-account data + consistent third-party reports). Write your first piece at full quality and aim straight for recommendations</li>
+<li><strong>First 10 articles: all original, all in one niche</strong> — that's both your eligibility and the fastest way to converge the system's content tags onto your domain</li>
+<li><strong>Run the official health check</strong>: Dashboard → Account Growth → Account Check — official self-audit across compliance / rec guidelines / account status / traffic feedback. This is WeChat's closest thing to "source code"; run it monthly</li>
+<li><strong>Never buy followers</strong>: fake reads are visible in completion curves (real readers exit at the end; bots exit at the top), and follower count doesn't buy rec traffic anyway — small accounts get a higher rec share</li>
+<li><strong>Watch the rec share</strong>: in read sources, a rising "recommended + Top Stories" share = your content clears the bar; stuck at zero = check the three switches, then the not-recommended list</li>
+</ul>
+
+<h2 id="pb-loyal">Playbook ③ Building regular readers</h2>
+<ul>
+<li><strong>Fixed publishing time</strong> (e.g. 18:30 daily): "regular reader" status is a habit, and habits form on rhythm — this is WeChat's version of recharging edge weights</li>
+<li><strong>Run named columns</strong>: a recurring series builds expectations ("one source-code teardown every Monday" beats random topics)</li>
+<li><strong>Track weekly regular-reader change</strong>, not follower count: regulars up = relationships thickening; followers up with flat regulars = you're collecting tourists</li>
+<li><strong>Frequency serves quality</strong>: <span class="badge neg">third-party</span> claims high frequency dilutes per-article recs; true or not, WeChat has no X-style daily-presence pressure — <strong>one strong piece a day beats three fillers</strong>, even more so here</li>
+</ul>
+
+<h2 id="pb-review">Playbook ④ Review cadence</h2>
+<ul>
+<li><strong>Per article: check on day 3 and day 7</strong> (long rec cycle; day-1 numbers don't decide anything). Four numbers: delivery-open rate (title), read-completion (content), Wow rate (spread), rec share (breakout)</li>
+<li><strong>Per account: monthly</strong>: regular-reader trend + the official health check + read-source structure</li>
+<li><strong>Diagnosis tree</strong>: low open rate → fix titles/covers; low completion → fix structure/length; low Wow → ending lacks resonance; zero rec share → check the three switches and the violation list</li>
+</ul>
+
+<h2 id="faq">FAQ</h2>
+
+<h3>Q: Does prompting readers to tap "Wow" count as inducement?</h3>
+<p>The inducement rules target <strong>rewarded/forced sharing to Moments</strong>. A natural, reward-free "Wow" prompt at the end is standard practice and not on the punishment list. The red line is the exchange of benefits: any "tap/share to receive X" falls under inducement.</p>
+
+<h3>Q: Will AI-assisted writing get throttled?</h3>
+<p>What's targeted is "AIGC misinformation" and "one-click AI sludge" — the keywords are <strong>false and low-quality</strong>, not AI itself. AI assistance + human fact-checking + real informational value is fine. Pure AI mass-production walks into both the low-quality and misinformation lines.</p>
+
+<h3>Q: Does publish time still matter?</h3>
+<p>Its weight is falling: rec distribution is decoupled from push time (3–7 day cycle). But subscription opens and Wow cascades still have an evening peak, and fixed timing builds the regular-reader habit — <strong>keep a fixed slot, stop worrying about it</strong>.</p>
+
+<h3>Q: Is reposting good articles worth anything?</h3>
+<p>Official and explicit: <strong>reposted content is never recommended</strong>. Reposts only collect subscription and forward traffic — near zero for small accounts. For curation, write an original commentary that quotes, instead of whitelist-reposting.</p>
+
+<h3>Q: Why is my recommendation traffic zero?</h3>
+<p>Check in order: ① the three switches (original / full broadcast / rec allowed) → ② the official health check → ③ whether the content hits the not-recommended list (redirect bait / marketing / clickbait / stale) → ④ whether read-completion is too low. The first three are eligibility — binary; only the fourth means "the content isn't good enough yet."</p>
+
+<h2 id="sources">Source index</h2>
+<table>
+<thead><tr><th>Type</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td><span class="badge pos">Official</span> rec feature Q&A</td><td><a href="https://developers.weixin.qq.com/community/develop/doc/0000a4c99dccb8f21d816ffe661009" target="_blank">WeChat Open Community · official pinned answers</a></td></tr>
+<tr><td><span class="badge pos">Official</span> rec guidelines</td><td><a href="https://developers.weixin.qq.com/community/develop/article/doc/00080ea36a43e83f42241d81466813" target="_blank">Official Account Recommendation Operation Guidelines</a></td></tr>
+<tr><td><span class="badge pos">Official</span> operation rules</td><td><a href="https://www.cnblogs.com/txw1958/p/weixin-mp-rules.html" target="_blank">WeChat Official Platform Operation Rules (mirror)</a></td></tr>
+<tr><td><span class="badge info">Doctrine</span></td><td>Allen Zhang, WeChat Open Class 2019 / 2021 (social recs; 1:2:10)</td></tr>
+<tr><td><span class="badge neg">Evidence</span></td><td><a href="https://36kr.com/p/3211329723614340" target="_blank">36Kr · the rising weight of Friends recommendations</a></td></tr>
+<tr><td><span class="badge warn">Metrics</span></td><td><a href="https://www.woshipm.com/operate/3375626.html" target="_blank">Woshipm · 34 key dashboard metrics</a></td></tr>
+</tbody>
+</table>
+
+<footer>
+A companion to <a href="./">The X Algorithm Handbook</a>: the X half is verified against open-source code; this page is inferred from official documents, with evidence grades inline. Production behavior can change at any time — defer to the latest official rules.<br>
+<a href="../zh/wechat.html">中文版</a>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信公众号操作手册 — 从官方文档反推的流量策略</title>
+<meta name="description" content="基于微信官方运营规范、推荐运营规范、后台指标体系与公开课表态,反推公众号的分发逻辑,给出可执行的操作手册。每条结论标注证据等级。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="./">𝕏 算法<span>规则手册</span></a>
+  <div class="spacer"></div>
+  <a class="lang" href="../en/wechat.html">English</a>
+  <a class="gh" href="https://github.com/partyfly/x-algorithm-handbook" target="_blank">GitHub ↗</a>
+</div>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="group">
+    <div class="group-title">本页</div>
+    <a href="#method">反推方法与证据等级</a>
+    <a href="#arch">分发架构:三层漏斗</a>
+    <a href="#gates">推荐资格:三个开关</a>
+    <a href="#signals">信号反推:指标食谱</a>
+    <a href="#redlines">红线与处罚</a>
+    <a href="#vs">X vs 公众号对照</a>
+  </div>
+  <div class="group">
+    <div class="group-title">行动指南</div>
+    <a href="#pb-publish">每篇发布清单</a>
+    <a href="#pb-new">新号起步</a>
+    <a href="#pb-loyal">常读用户培养</a>
+    <a href="#pb-review">数据复盘节奏</a>
+    <a href="#faq">常见问题 FAQ</a>
+  </div>
+  <div class="group">
+    <div class="group-title">返回</div>
+    <a href="./">← X 手册首页</a>
+    <a href="timing.html">行动时间 + 时钟工具</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<h1>微信公众号操作手册</h1>
+<p class="subtitle">公众号没有开源代码,但它的流量策略可以从三类官方材料反推:后台指标体系(平台测什么)、运营规范(平台罚什么)、公开课表态(平台想要什么)。本手册每条结论标注证据等级。</p>
+
+<div class="disclaimer">
+⚠️ <strong>证据口径:</strong>与 X 手册不同,本页是对闭源系统的反推。四档标注:<span class="badge pos">官方</span>=白纸黑字的规则文档;<span class="badge info">理念</span>=张小龙/微信公开课表态;<span class="badge warn">指标反推</span>=后台暴露的数据维度,测什么≈优化什么;<span class="badge neg">第三方</span>=运营圈观察,未经官方确认,当传闻看。所有具体倍数(如"完读率 1.3 倍加成")均属第三方,本页只采信方向、不采信数值。
+</div>
+
+<h2 id="method">反推方法</h2>
+<p>三面镜子拼出闭源算法的轮廓:</p>
+<ul>
+<li><strong>后台指标 = 算法的食谱。</strong>平台把哪些数据摆给你看(完读率、常读用户、在看、传播层级),就等于告诉你它在测什么、优化什么。</li>
+<li><strong>处罚清单 = 算法的负权重。</strong>《运营规范》和《推荐运营规范》逐条写明不推荐什么、封什么——这是比任何泄露都可靠的"负面特征表"。</li>
+<li><strong>官方表态 = 目标函数。</strong>张小龙的"1:2:10"和"社交推荐最符合人性",直接给出了系统的长期方向。</li>
+</ul>
+
+<h2 id="arch">分发架构:三层漏斗</h2>
+
+<div class="figure">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif">
+  <defs>
+    <marker id="warr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#00ba7c"/>
+    </marker>
+  </defs>
+  <rect x="20" y="30" width="220" height="110" rx="14" fill="#1d9bf0" opacity="0.10"/>
+  <text x="130" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#1d9bf0">① 订阅(私域打底)</text>
+  <text x="130" y="82" text-anchor="middle" font-size="11" fill="#536471">订阅号消息列表</text>
+  <text x="130" y="98" text-anchor="middle" font-size="11" fill="#536471">常读用户置顶横栏</text>
+  <text x="130" y="114" text-anchor="middle" font-size="11" fill="#536471">关键变量:常读关系</text>
+  <rect x="270" y="30" width="220" height="110" rx="14" fill="#00ba7c" opacity="0.10"/>
+  <text x="380" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#00ba7c">② 社交链(放大器)</text>
+  <text x="380" y="82" text-anchor="middle" font-size="11" fill="#536471">朋友♡(由"在看"进化)</text>
+  <text x="380" y="98" text-anchor="middle" font-size="11" fill="#536471">群聊/私聊转发、朋友圈</text>
+  <text x="380" y="114" text-anchor="middle" font-size="11" fill="#536471">关键变量:在看率、转发率</text>
+  <rect x="520" y="30" width="220" height="110" rx="14" fill="#794bc4" opacity="0.10"/>
+  <text x="630" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#794bc4">③ 机器推荐(上限)</text>
+  <text x="630" y="82" text-anchor="middle" font-size="11" fill="#536471">订阅流推荐卡片、看一看</text>
+  <text x="630" y="98" text-anchor="middle" font-size="11" fill="#536471">搜一搜(长尾)</text>
+  <text x="630" y="114" text-anchor="middle" font-size="11" fill="#536471">关键变量:完读率、合规资格</text>
+  <line x1="244" y1="85" x2="266" y2="85" stroke="#00ba7c" stroke-width="2.5" marker-end="url(#warr)"/>
+  <line x1="494" y1="85" x2="516" y2="85" stroke="#00ba7c" stroke-width="2.5" marker-end="url(#warr)"/>
+  <text x="60" y="190" font-size="13" font-weight="700" fill="#536471">张小龙的目标比例(2021 公开课,针对视频号,公众号沿同轨道):</text>
+  <rect x="60" y="205" width="56" height="34" rx="8" fill="#1d9bf0" opacity="0.15"/>
+  <text x="88" y="227" text-anchor="middle" font-size="14" font-weight="800" fill="#1d9bf0">1</text>
+  <text x="130" y="227" font-size="12" fill="#536471">关注</text>
+  <rect x="180" y="205" width="112" height="34" rx="8" fill="#00ba7c" opacity="0.15"/>
+  <text x="236" y="227" text-anchor="middle" font-size="14" font-weight="800" fill="#00ba7c">2</text>
+  <text x="306" y="227" font-size="12" fill="#536471">朋友推荐</text>
+  <rect x="380" y="205" width="280" height="34" rx="8" fill="#794bc4" opacity="0.15"/>
+  <text x="520" y="227" text-anchor="middle" font-size="14" font-weight="800" fill="#794bc4">10</text>
+  <text x="672" y="227" font-size="12" fill="#536471">机器推荐</text>
+</svg>
+<div class="caption">公众号 = 订阅打底 + 社交链放大 + 机器推荐决定上限。"轻订阅、重推荐"是官方既定方向。</div>
+</div>
+
+<p><span class="badge info">理念</span> 张小龙 2019:"社交推荐是最符合人性的获取信息方式";2021 年写下 <strong>1 : 2 : 10</strong>(关注 : 朋友 : 机器)的目标比例。</p>
+<p><span class="badge pos">官方</span> "在看"已进化为<strong>朋友♡</strong>独立入口,位置排在订阅内容之前,微信团队持续扩大测试。</p>
+<p><span class="badge neg">实证</span> 36 氪小号"36氪未来消费":推荐流量占比从 2023-08 的 <strong>24.3%</strong> 涨到 2025-03 的 <strong>45.9%</strong>;其大号仅 2.2%——<strong>账号越小,推荐占比越高</strong>。</p>
+
+<div class="card green">
+<div class="card-title">✅ 一句话结论</div>
+公众号已经不是"订阅制媒体"。对小号,<strong>约一半流量来自推荐</strong>——你的真实竞争场是机器推荐池和朋友♡社交链,订阅数只是地基。
+</div>
+
+<h2 id="gates">推荐资格:三个开关(零或一,不是权重)</h2>
+<p><span class="badge pos">官方</span> 与 X 的连续权重体系最大的不同:公众号大量使用<strong>二元门槛</strong>。以下任何一个不满足,推荐流量直接为零:</p>
+
+<table>
+<thead><tr><th>开关</th><th>要求</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>① 原创</td><td><strong>必须声明原创</strong></td><td>官方原文:"转载和分组群发的内容将不会被推荐"。原创不是加分项,是<strong>入场券</strong></td></tr>
+<tr><td>② 全量群发</td><td>不分组发表</td><td>分组群发 = 放弃推荐资格</td></tr>
+<tr><td>③ 推荐许可</td><td>未勾选"不允许被平台推荐"</td><td>一旦勾选<strong>不可撤销</strong>,发布前必查</td></tr>
+</tbody>
+</table>
+
+<p>原创声明本身也有门槛(<span class="badge pos">官方</span>):公共内容(法规/新闻/榜单)、营销宣传、非独家授权的翻译整理都<strong>不得声明原创</strong>;违规声明会被取消标识并处罚账号。</p>
+
+<h2 id="signals">信号反推:后台指标 = 算法的食谱</h2>
+<p><span class="badge warn">指标反推</span> 平台把哪些数据摆给你看,就等于告诉你它在优化什么:</p>
+
+<table>
+<thead><tr><th>后台指标</th><th>反推的算法信号</th><th>X 的对应物</th></tr></thead>
+<tbody>
+<tr><td><strong>阅读完成率</strong></td><td>内容质量核心信号:标题与内容相符度、沉浸度</td><td>dwell 停留时长</td></tr>
+<tr><td><strong>常读用户</strong></td><td>用户-账号关系强度,决定订阅排序与常读置顶</td><td><strong>RealGraph 边权</strong>(几乎同构)</td></tr>
+<tr><td><strong>在看</strong></td><td>公开背书,直接喂给好友的朋友♡推荐流</td><td><strong>点赞 → UTEG 传播</strong>(几乎同构)</td></tr>
+<tr><td>一次/二次传播比</td><td>病毒系数、出圈能力</td><td>转推/引用传播链</td></tr>
+<tr><td>送达阅读率</td><td>标题 + 封面的打开转化</td><td>预览点击率</td></tr>
+<tr><td>阅读来源细分</td><td>官方明示的分发面:会话/朋友圈/看一看/推荐/搜一搜</td><td>召回多通道</td></tr>
+<tr><td>收藏 / 赞</td><td>留存价值信号</td><td>bookmark(2025 新预测头)</td></tr>
+</tbody>
+</table>
+
+<p><span class="badge neg">第三方</span> 流传的具体参数——"滑到底部停 3 秒算有效完读"、"完读率 1.3 倍加成"、"NLP 兴趣标签匹配"、"推荐周期约 7 天"——方向与指标体系吻合,数值不可考,当传闻用。</p>
+
+<h2 id="redlines">红线与处罚:急性死亡,不是慢性失血</h2>
+<p><span class="badge pos">官方</span> X 用负权重定价不良行为(−74 慢性失血),公众号直接行政处罚(急性死亡):</p>
+
+<table>
+<thead><tr><th>行为</th><th>官方定性</th><th>后果</th></tr></thead>
+<tbody>
+<tr><td>诱导分享朋友圈(带奖励/强制)</td><td>诱导行为</td><td><span class="badge neg">首犯封 30 天</span> + 删诱导涨粉 + 关流量主;<strong>再犯永久封号</strong></td></tr>
+<tr><td>标题党(惊悚/命令式/生僻字对抗)</td><td>不推荐 + 违规</td><td>删文 → 限能力 → 封号(阶梯)</td></tr>
+<tr><td>导流内容(规范 5.4:不完整内容引导跳转)</td><td>不予推荐</td><td>推荐资格清零;骗广告收益的删文/删粉/封号</td></tr>
+<tr><td>纯营销广告、失去时效的信息、低质内容</td><td>不予推荐</td><td>推荐流量为零</td></tr>
+<tr><td>AIGC 虚假信息、"AI 一键生成"假大空</td><td>不实信息</td><td>不推荐;虚假信息按规范处罚</td></tr>
+<tr><td>买粉/刷量</td><td>虚假互动</td><td>权重永久受损(<span class="badge neg">第三方</span>);刷量可被完读曲线识别(开头跳出 = 刷量特征)</td></tr>
+<tr><td>多账号同主体反复违规</td><td>累犯</td><td>拒绝向该主体提供任何注册/认证服务</td></tr>
+</tbody>
+</table>
+
+<div class="card red">
+<div class="card-title">🚫 核心区别</div>
+在 X 上打擦边球,亏的是<strong>期望值</strong>;在公众号上打擦边球,亏的是<strong>账号</strong>。微信不和你谈判。
+</div>
+
+<h2 id="vs">X vs 公众号:同一件事,两套相反的设计</h2>
+
+<table>
+<thead><tr><th>维度</th><th>X(开源实证)</th><th>公众号(官方反推)</th></tr></thead>
+<tbody>
+<tr><td>系统性格</td><td>拍卖机:连续权重给每个行为定价</td><td>俱乐部:先验资格,再凭质量分发</td></tr>
+<tr><td>关系强度</td><td>RealGraph 边权(7 天半衰期)</td><td>常读用户(机制同构,衰减周期未知)</td></tr>
+<tr><td>公开背书传播</td><td>点赞 → UTEG"XX 赞了"(48h 窗口)</td><td>在看 → 朋友♡ 入口</td></tr>
+<tr><td>质量核心信号</td><td>dwell / bookmark / 视频时长</td><td>完读率 / 收藏</td></tr>
+<tr><td>原创</td><td>无此概念(只有集群去重)</td><td><strong>推荐资格的入场券</strong></td></tr>
+<tr><td>惩罚方式</td><td>软权重:−74 / −369 / 140 天疲劳</td><td>硬处罚:删文 / 封 30 天 / 永久封号</td></tr>
+<tr><td>新号待遇</td><td>NotGraduated 墙,30 天账龄期</td><td>推荐对新号友好,小号推荐占比反而高</td></tr>
+<tr><td>单帖生死时钟</td><td>第一小时(30 分钟热度半衰期)</td><td>3–7 天(推荐周期长,与发布时刻解耦)</td></tr>
+<tr><td>冷启动正解</td><td>先回复区攒关系,再发原创</td><td><strong>第一天就全力押内容质量博推荐</strong></td></tr>
+</tbody>
+</table>
+
+<h2 id="pb-publish">行动指南 ① 每篇发布清单</h2>
+<div class="card blue">
+<ol>
+<li><strong>三开关自查</strong>:声明原创 ✓ 全量群发(不分组)✓ 未勾选"不允许推荐" ✓ —— 错一个,推荐归零</li>
+<li><strong>标题克制</strong>:准确概括内容,不惊悚、不命令式、不留半截话。标题党在这里是封号风险,不是流量技巧</li>
+<li><strong>为完读率设计结构</strong>:首段给出全文价值承诺;小标题 + 图表 + 加粗结论分段;长文不等于流水账</li>
+<li><strong>文末自然引导"在看"</strong>(不带任何奖励):在看直接喂朋友♡推荐流。<strong>绝不</strong>做"转发朋友圈领 XX"——那是 30 天封号红线</li>
+<li><strong>不在正文里导流</strong>:二维码、"点此看完整版"、引流到第三方——规范 5.4 直接取消推荐资格</li>
+<li><strong>发布后不用守第一小时</strong>:推荐周期 3–7 天,数据慢慢看;把守帖的时间拿去写明天的内容</li>
+</ol>
+</div>
+
+<h2 id="pb-new">行动指南 ② 新号起步(与 X 完全相反)</h2>
+<ul>
+<li><strong>不需要冷启动期</strong>:推荐池对新号开放(36 氪小号实证 + 第三方"新号友好"观察一致)。第一篇就按最高质量标准写,直接博推荐</li>
+<li><strong>前 10 篇全部原创 + 垂直</strong>:既是推荐资格,也是让系统的内容标签尽快收敛到你的领域</li>
+<li><strong>跑官方体检</strong>:后台【账号成长】→【账号检测】,官方从基础合规/推荐运营规范/账号状态/流量反馈四个维度自查——这是公众号版的"源码",每月跑一次</li>
+<li><strong>别买粉</strong>:刷量会被完读曲线识别(正常读者文末跳出,刷量开头跳出),且粉丝数不直接换推荐流量——小号推荐占比反而更高,买粉是负资产</li>
+<li><strong>起量指标看推荐占比</strong>:后台阅读来源里"推荐"+"看一看"的占比持续上升 = 内容过线;长期为零 = 先查三开关,再查内容是否撞了不予推荐清单</li>
+</ul>
+
+<h2 id="pb-loyal">行动指南 ③ 常读用户培养</h2>
+<ul>
+<li><strong>固定发布时间</strong>(如每天 18:30):常读的本质是打开习惯,习惯靠节律养成——这是公众号版的"边权充电"</li>
+<li><strong>栏目化</strong>:固定的系列名/结构让读者形成预期("每周一拆一个源码"比随机选题更养常读)</li>
+<li><strong>盯常读用户数的周变化</strong>而非粉丝数:常读涨 = 关系变厚;粉丝涨常读不涨 = 涨的是路人</li>
+<li><strong>发布频率服务于质量</strong>:<span class="badge neg">第三方</span>称高频更新会冲淡单篇推荐;不论真假,公众号没有 X 那种"每日在场"的边权压力,<strong>每天一篇高质量 &gt; 三篇灌水</strong>在这里更成立</li>
+</ul>
+
+<h2 id="pb-review">行动指南 ④ 数据复盘节奏</h2>
+<ul>
+<li><strong>单篇:第 3 天和第 7 天各看一次</strong>(推荐周期长,首日数据不定生死)。看四个数:送达阅读率(标题)、完读率(内容)、在看率(传播)、推荐占比(出圈)</li>
+<li><strong>账号:每月一次</strong>:常读用户趋势 + 账号检测体检 + 阅读来源结构变化</li>
+<li><strong>诊断决策树</strong>:送达阅读率低 → 改标题/封面;完读率低 → 改结构/砍长度;在看率低 → 结尾缺乏共鸣点/号召;推荐占比为零 → 查三开关和违规清单</li>
+</ul>
+
+<h2 id="faq">常见问题 FAQ</h2>
+
+<h3>Q:引导读者点"在看"算诱导吗?</h3>
+<p>官方诱导条款打击的是<strong>带奖励/强制的"分享至朋友圈"</strong>。文末自然引导在看(无奖励、无强制)是行业常规,目前不在打击清单内。红线是"利益交换":凡是"点在看/转发领资料",都踩进诱导定义。</p>
+
+<h3>Q:AI 辅助写作会被限流吗?</h3>
+<p>官方打击的是"AIGC 虚假信息"和"AI 一键生成的假大空内容"——关键词是<strong>虚假和低质</strong>,不是 AI 本身。AI 辅助 + 人工事实核查 + 真实信息增量,不在打击范围。但纯洗稿式 AI 量产,撞的是低质和不实两条线。</p>
+
+<h3>Q:公众号还吃发布时间吗?</h3>
+<p>权重在下降:推荐分发与推送时刻解耦(周期 3–7 天)。但订阅打开和在看链式反应仍有晚高峰效应,固定时间对常读习惯也有价值——<strong>保留固定发布时间,但不必为它焦虑</strong>。</p>
+
+<h3>Q:转载别人的好文章有流量吗?</h3>
+<p>官方明文:<strong>转载内容不会被推荐</strong>。转载只能吃订阅和转发流量,对小号约等于零。想做内容策展,用"原创评述 + 引用"的形式,而不是白名单转载。</p>
+
+<h3>Q:为什么我的推荐流量是零?</h3>
+<p>按顺序排查:① 三开关(原创/全量/未关推荐)→ ② 账号检测体检 → ③ 内容是否撞不予推荐清单(导流/营销/标题党/时效失效)→ ④ 完读率是否过低(质量门槛)。前三项是资格问题,二元的;只有第四项才是"内容不够好"。</p>
+
+<h2 id="sources">信源索引</h2>
+<table>
+<thead><tr><th>类型</th><th>来源</th></tr></thead>
+<tbody>
+<tr><td><span class="badge pos">官方</span> 推荐功能说明</td><td><a href="https://developers.weixin.qq.com/community/develop/doc/0000a4c99dccb8f21d816ffe661009" target="_blank">微信开放社区·公众号文章推荐功能官方答疑(置顶)</a></td></tr>
+<tr><td><span class="badge pos">官方</span> 推荐运营规范</td><td><a href="https://developers.weixin.qq.com/community/develop/article/doc/00080ea36a43e83f42241d81466813" target="_blank">微信公众号和服务号推荐运营规范</a></td></tr>
+<tr><td><span class="badge pos">官方</span> 运营规范(处罚)</td><td><a href="https://www.cnblogs.com/txw1958/p/weixin-mp-rules.html" target="_blank">微信公众平台运营规范(转载全文)</a></td></tr>
+<tr><td><span class="badge info">理念</span> 公开课表态</td><td>张小龙 2019/2021 微信公开课(社交推荐、1:2:10)</td></tr>
+<tr><td><span class="badge neg">实证</span> 推荐占比数据</td><td><a href="https://36kr.com/p/3211329723614340" target="_blank">36氪·"朋友推荐"权重上升</a> / <a href="https://news.qq.com/rain/a/20250318A0852200" target="_blank">腾讯新闻·产品观察</a></td></tr>
+<tr><td><span class="badge warn">指标体系</span> 后台数据</td><td><a href="https://www.woshipm.com/operate/3375626.html" target="_blank">人人都是产品经理·4 大模块 34 个关键指标</a></td></tr>
+</tbody>
+</table>
+
+<footer>
+本页是 <a href="./">X 算法规则手册</a>的姊妹篇:X 部分基于开源代码实证,本页基于官方文档反推,证据等级随文标注。生产环境随时可能调整,请以官方最新规范为准。<br>
+<a href="../en/wechat.html">English version</a>
+</footer>
+
+</main>
+</div>
+</body>
+</html>
