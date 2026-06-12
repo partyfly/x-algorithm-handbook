@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Action Timing — The X Algorithm Handbook</title>
+<meta name="description" content="Compute your best action times on X from your timezone and posting language. Interactive 24-hour clock covering the audience timezones of the top 10 languages.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="./">𝕏 Algorithm <span>Handbook</span></a>
+  <div class="spacer"></div>
+  <a class="lang" href="../zh/timing.html">中文</a>
+  <a class="gh" href="https://github.com/twitter/the-algorithm" target="_blank">Source Code ↗</a>
+</div>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="group">
+    <div class="group-title">This page</div>
+    <a href="#why">Why timing matters</a>
+    <a href="#clock">Interactive clock</a>
+    <a href="#table">Action × time table</a>
+    <a href="#method">How it's computed</a>
+  </div>
+  <div class="group">
+    <div class="group-title">Back</div>
+    <a href="./">← Handbook home</a>
+    <a href="./#clocks">The seven clocks</a>
+    <a href="./#behaviors">Behavior dictionary</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<h1>Action Timing</h1>
+<p class="subtitle">The code has no magic hour. But three mechanisms make timing matter — and the clock below computes your audience's active windows from your posting language.</p>
+
+<h2 id="why">Why timing matters: three code mechanisms</h2>
+<ol>
+<li><strong>The 30-minute half-life is a speed race.</strong> A post's real-time buzz features lose half their power every 30 minutes (<code>TimelinesOnlineAggregationConfigBase.scala</code>). You need engagement density right after posting. If your readers are asleep, the speed never builds.</li>
+<li><strong>Ranking is a relative contest at every refresh.</strong> Your post competes against ~1,500 candidates each time a reader refreshes. Posting when your target readers are active = entering the most contests.</li>
+<li><strong>The first wave of engagement locks the direction.</strong> The system tracks each post's engagement per country in real time (<code>TweetCountryEngagementRealTimeAggregateFeatureHydrator.scala</code>), and each liker's interest vector gets added to the post's profile (SimClusters). <strong>Whoever engages in the first hour decides which countries and communities see the post next.</strong> Post in English during Asian daytime hours and the first wave comes from the wrong audience — pulling distribution the wrong way.</li>
+</ol>
+<div class="card amber">
+<div class="card-title">⚠️ The takeaway: posting time is how you choose your first engagers</div>
+It's not just "post when people are online" — it's "post when your <strong>target</strong> audience is awake and everyone else is asleep." The overlap window is the sweet spot. That's exactly what the clock below computes.
+</div>
+
+<h2 id="clock">Interactive clock: your recommended windows</h2>
+<p>Pick your timezone and posting language (defaults come from your browser). The clock overlays the typical activity curves of that language's top audience timezones, weighted, and maps them onto your local time:</p>
+
+<div class="legend-tiers">
+  <span class="lg"><span class="sw" style="background:#00ba7c"></span>Best (top 4 hours)</span>
+  <span class="lg"><span class="sw" style="background:#79d2ab"></span>Good (next 5)</span>
+  <span class="lg"><span class="sw" style="background:#c9d6dd"></span>OK</span>
+  <span class="lg"><span class="sw" style="background:#eef2f4;border:1px solid #e1e8ed"></span>Quiet (bottom 6)</span>
+</div>
+
+<div id="timing-clock"></div>
+
+<div class="card blue">
+<div class="card-title">💡 How to use it</div>
+<ul>
+<li>Publish originals at the <strong>start</strong> of a green window, then guard the first hour and answer every comment</li>
+<li>Posting 2–3 times a day? Spread them across different green windows (the same-author discount punishes clustering)</li>
+<li>The red needle is your current local time — hover any segment to see who's awake in that hour</li>
+</ul>
+</div>
+
+<h2 id="table">Action × time table</h2>
+<p>Different actions have different best times, each tied to a clock in the code:</p>
+<table>
+<thead><tr><th>Action</th><th>Best time</th><th>Why (which code clock)</th></tr></thead>
+<tbody>
+<tr><td><strong>Publishing an original</strong></td><td>Start of your audience's active window (use the clock above)</td><td>30-min buzz half-life + the first wave locks distribution</td></tr>
+<tr><td><strong>Answering comments on your post</strong></td><td>Within the first hour, the faster the better</td><td>Engagement inside the buzz window counts most; every answer is a +75 chance</td></tr>
+<tr><td><strong>Replying to others' hot posts</strong></td><td>As early as possible after they publish (first 1–2 hours)</td><td>Early replies rank higher in the conversation, and the author is most likely online to respond</td></tr>
+<tr><td><strong>Daily likes / engagement</strong></td><td>Any time — but <strong>every day</strong></td><td>Relationship edges halve in 7 days and update daily; consistency beats clock time</td></tr>
+<tr><td><strong>Welcoming a new follower (reply to them)</strong></td><td>Within days of the follow</td><td>Edge strength peaks at the follow moment — the 7-day trial window</td></tr>
+<tr><td><strong>Reviewing a post's numbers</strong></td><td>48 hours after publishing</td><td>The UTEG spread window has closed; the data is final</td></tr>
+<tr><td><strong>Repositioning / changing niche</strong></td><td>Any day — but budget ≥2 weeks</td><td>Neighborhood embeddings recompute every 7 days; two cycles to settle</td></tr>
+<tr><td><strong>Full account review</strong></td><td>Every 30 days</td><td>30-day negative-signal window + snapshot cycles</td></tr>
+</tbody>
+</table>
+
+<h2 id="method">How it's computed — and its limits</h2>
+<ul>
+<li><strong>What comes from the code:</strong> the three mechanisms above are source-code facts. The "what hour" part is not — X has not open-sourced per-country activity curves.</li>
+<li><strong>What this tool estimates:</strong> ① audience timezone weights per language are rough estimates (shown under the clock — adjust against your own analytics); ② the activity curve is a generic social-media model (morning ramp, lunch bump, evening prime time), not official X data; ③ timezone math uses the browser's <code>Intl</code> API live, so daylight saving is handled automatically.</li>
+<li><strong>How to calibrate:</strong> treat the "best/second-best" windows as a starting point. Post 5–6 comparable pieces in each window over two weeks and let your own impression data pick the real winner — your actual follower mix is the final authority.</li>
+</ul>
+
+<footer>
+Part of <a href="./">The X Algorithm Handbook</a>. The clock runs entirely in your browser — no data leaves the page.<br>
+<a href="../zh/timing.html">中文版</a>
+</footer>
+
+</main>
+</div>
+
+<script src="../assets/clock.js"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行动时间 — X 算法规则手册</title>
+<meta name="description" content="根据你的时区和发帖语言,计算 X 上的最佳行动时间。带交互式 24 小时时钟,覆盖前 10 大语言的受众时区分布。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="./">𝕏 算法<span>规则手册</span></a>
+  <div class="spacer"></div>
+  <a class="lang" href="../en/timing.html">English</a>
+  <a class="gh" href="https://github.com/twitter/the-algorithm" target="_blank">算法源码 ↗</a>
+</div>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="group">
+    <div class="group-title">本页</div>
+    <a href="#why">为什么时机重要</a>
+    <a href="#clock">交互时钟:推荐窗口</a>
+    <a href="#table">行为 × 时间对照表</a>
+    <a href="#method">计算口径与局限</a>
+  </div>
+  <div class="group">
+    <div class="group-title">返回</div>
+    <a href="./">← 手册首页</a>
+    <a href="./#clocks">算法的七个时钟</a>
+    <a href="./#behaviors">行为辞典</a>
+  </div>
+</nav>
+
+<main id="top">
+
+<h1>行动时间</h1>
+<p class="subtitle">源码里没有"黄金几点",但有三个机制让时机变得重要。下面的时钟工具按你的发帖语言推算受众活跃窗口。</p>
+
+<h2 id="why">为什么时机重要:三个源码机制</h2>
+<ol>
+<li><strong>30 分钟半衰期 = 互动速度竞赛。</strong>帖子的实时热度特征每 30 分钟衰减一半(<code>TimelinesOnlineAggregationConfigBase.scala</code>)。发布后立刻需要互动密度,读者不在线,速度就起不来。</li>
+<li><strong>排名是每次刷新时的相对竞争。</strong>你的帖子在每个读者刷新的瞬间,和约 1500 条候选比分数。目标读者活跃时段 = 你参与竞争的场次最多。</li>
+<li><strong>第一波互动"锁定"分发方向。</strong>系统实时统计每条帖子分国家的互动数据(<code>TweetCountryEngagementRealTimeAggregateFeatureHydrator.scala</code>),且赞你的人的兴趣向量实时累加进帖子嵌入(SimClusters)。<strong>第一小时谁在互动,决定这条帖子接下来推给哪国、哪个社区。</strong>发英文帖却在中文时区的白天发,第一波中文互动会把分发带偏。</li>
+</ol>
+<div class="card amber">
+<div class="card-title">⚠️ 推论:发帖时间是你"选择第一批互动者"的工具</div>
+不只是"人多的时候发"——而是"<strong>目标受众</strong>醒着、而非目标受众睡着的时候发"。两者重叠的窗口是最优解,下面的时钟就在算这个。
+</div>
+
+<h2 id="clock">交互时钟:你的推荐行动窗口</h2>
+<p>选择你的时区和发帖语言(默认读取浏览器时区与系统语言)。时钟把该语言前 10 大受众时区的典型活跃曲线加权叠加,映射到你的时区:</p>
+
+<div class="legend-tiers">
+  <span class="lg"><span class="sw" style="background:#00ba7c"></span>最佳(前 4 小时)</span>
+  <span class="lg"><span class="sw" style="background:#79d2ab"></span>良好(次 5 小时)</span>
+  <span class="lg"><span class="sw" style="background:#c9d6dd"></span>一般</span>
+  <span class="lg"><span class="sw" style="background:#eef2f4;border:1px solid #e1e8ed"></span>冷门(后 6 小时)</span>
+</div>
+
+<div id="timing-clock"></div>
+
+<div class="card blue">
+<div class="card-title">💡 怎么用这个时钟</div>
+<ul>
+<li><strong>原创帖</strong>发在绿色窗口的<strong>起点</strong>,然后守住第一小时回复每条评论</li>
+<li>一天发 2–3 条时,分散到不同的绿色窗口(同作者衰减会惩罚扎堆)</li>
+<li>红针是你时区的当前时间——悬停每个色块可以看到那个小时哪些受众醒着</li>
+</ul>
+</div>
+
+<h2 id="table">行为 × 时间对照表</h2>
+<p>不同行为的最佳时机不一样,对照源码时钟逐一整理:</p>
+<table>
+<thead><tr><th>行为</th><th>最佳时机</th><th>依据(源码时钟)</th></tr></thead>
+<tbody>
+<tr><td><strong>发原创帖</strong></td><td>目标受众活跃窗口的起点(用上面的时钟)</td><td>30 分钟热度半衰期 + 第一波互动锁定分发方向</td></tr>
+<tr><td><strong>回复自己帖子下的评论</strong></td><td>发布后第一小时内,越快越好</td><td>热度窗口内的互动权重最高;每次回应都是 +75 的机会</td></tr>
+<tr><td><strong>回复别人的热帖</strong></td><td>对方发布后越早越好(前 1–2 小时)</td><td>早期回复在对话页位置更靠前,且作者在线回应概率最大</td></tr>
+<tr><td><strong>日常点赞 / 互动养号</strong></td><td>任意时间,但<strong>每天连续</strong></td><td>关系边权 7 天半衰期、每日更新——连续性比时点重要</td></tr>
+<tr><td><strong>欢迎新粉丝(去回复他)</strong></td><td>关注发生后几天内</td><td>关注瞬间边权峰值,7 天试用期窗口</td></tr>
+<tr><td><strong>复盘单条帖子</strong></td><td>发布 48 小时后</td><td>UTEG 传播窗口关闭,数据已定型</td></tr>
+<tr><td><strong>调整定位 / 换赛道动作</strong></td><td>任何一天都行,但要预留 ≥2 周</td><td>社区嵌入每 7 天批算一次,两个周期才稳定</td></tr>
+<tr><td><strong>账号整体复盘</strong></td><td>每 30 天</td><td>负信号 30 天统计窗口 + 账龄/快照周期</td></tr>
+</tbody>
+</table>
+
+<h2 id="method">计算口径与局限</h2>
+<ul>
+<li><strong>源码提供的部分:</strong>"时机为什么重要"的三个机制是源码事实;"几点发"不是——X 没有开源分国家的活跃曲线。</li>
+<li><strong>本工具的估算部分:</strong>① 各语言的受众时区权重为粗略估计(页面下方有明细,可对照自己后台数据修正);② 活跃度曲线采用通用社交媒体模型(早高峰、午间、晚间黄金档),非 X 官方数据;③ 时区换算用浏览器 <code>Intl</code> API 实时计算,自动处理夏令时。</li>
+<li><strong>校准方法:</strong>把工具给出的"最佳/次选"窗口当起点,在两个窗口各发 5–6 条同类型内容跑两周,用自己的展示量数据选出真窗口——你的粉丝构成才是最终权威。</li>
+</ul>
+
+<footer>
+本页属于 <a href="./">X 算法规则手册</a>。时钟为本地计算,不上传任何数据。<br>
+<a href="../en/timing.html">English version</a>
+</footer>
+
+</main>
+</div>
+
+<script src="../assets/clock.js"></script>
+</body>
+</html>

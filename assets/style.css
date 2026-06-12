@@ -168,3 +168,44 @@ footer {
   h2 { font-size: 21px; }
   table { font-size: 13px; display: block; overflow-x: auto; }
 }
+
+/* ===== Timing clock ===== */
+.clock-controls { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+.clock-ctl { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-soft); }
+.clock-ctl select {
+  font-size: 15px; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg-soft); color: var(--text);
+  min-width: 220px;
+}
+.clock-stage { position: relative; max-width: 520px; margin: 0 auto; }
+.timing-svg { width: 100%; height: auto; display: block; }
+.clock-sector { cursor: pointer; transition: opacity .15s; }
+.clock-sector:hover { opacity: .8; }
+.clock-sector.best { stroke: var(--green); stroke-width: 1.5; }
+.clock-num { font-size: 13px; font-weight: 700; fill: var(--text-soft); }
+.clock-tick { stroke: var(--border); stroke-width: 1.5; }
+.clock-center { fill: var(--bg-soft); stroke: var(--border); }
+.clock-time { font-size: 26px; font-weight: 800; fill: var(--text); }
+.clock-sub { font-size: 12px; fill: var(--text-soft); }
+.clock-needle { stroke: var(--red); stroke-width: 2.5; stroke-linecap: round; }
+.clock-needle-dot { fill: var(--red); }
+.clock-tip {
+  position: absolute; z-index: 10; pointer-events: none;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; font-size: 12.5px; line-height: 1.6; width: 180px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12);
+}
+.clock-tip .tip-sub { color: var(--text-soft); margin-top: 4px; }
+.clock-windows { margin: 18px 0 6px; }
+.clock-windows .win-row { margin: 8px 0; }
+.clock-windows code { margin-right: 6px; font-size: 14px; }
+.clock-audience { margin: 18px 0; }
+.aud-title { font-size: 13px; color: var(--text-soft); margin-bottom: 8px; }
+.aud-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 13.5px; }
+.aud-name { width: 130px; flex-shrink: 0; }
+.aud-bar { flex: 1; height: 8px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; }
+.aud-bar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.aud-pct { width: 42px; text-align: right; color: var(--text-soft); font-size: 12.5px; }
+.legend-tiers { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 13px; }
+.legend-tiers .lg { display: flex; align-items: center; gap: 6px; }
+.legend-tiers .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
