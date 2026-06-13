@@ -24,7 +24,7 @@ Open `index.html` for automatic language detection, or enable GitHub Pages on th
 | The seven clocks (30 min → 140 days) | 算法的七个时钟 |
 | Playbooks: new account / 0-follower old account / dormant revival / niche pivot / per-post checklist | 行动指南:新号 / 0 粉老号 / 沉睡老号 / 换赛道 / 每帖清单 |
 | FAQ + full source-file index | FAQ + 源码文件索引 |
-| **WeChat Official Account playbook** — reverse-engineered from official docs, evidence-graded, with an X-vs-WeChat comparison | **微信公众号操作手册** — 官方文档反推,证据分级,含 X 对照表 |
+| **WeChat OA Handbook** (sister site) — moved to its own repo: [wechat-handbook](https://github.com/partyfly/wechat-handbook) | **微信公众号操作手册**(姊妹站)— 已独立成站:[wechat-handbook](https://github.com/partyfly/wechat-handbook) |
 
 ## Method / 方法
 
